@@ -1926,4 +1926,9 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 }
 #pay-with-balance-btn .fa-wallet {
     margin-right: 5px;
+
+}
+
+#pay-with-balance-btn .btn-text {
+    white-space: nowrap;
 }
