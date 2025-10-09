@@ -2018,7 +2018,7 @@ checkoutBtn.addEventListener('click', () => {
 
     if (currentBalance >= totalPrice) {
         payWithBalanceBtn.disabled = false;
-        payWithBalanceBtn.querySelector('.btn-text').textContent = `Mit Guthaben bezahlen (${currentBalance.toFixed(2)} €)`;
+        payWithBalanceBtn.querySelector('.btn-text').textContent = `Mit Guthaben bezahlen <br> (${currentBalance.toFixed(2)} €)`;
     } else {
         payWithBalanceBtn.disabled = true;
         payWithBalanceBtn.querySelector('.btn-text').textContent = `Nicht genügend Guthaben`;
@@ -2755,4 +2755,5 @@ function handleCartAction(itemId, action) {
             handleCartAction(id, 'minus');
         }
     });
+
 });
