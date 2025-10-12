@@ -55,6 +55,15 @@
 
         <div class="menu-container">
             <h1>Speisekarte</h1>
+            <div id="restverkauf-section" style="display: none;">
+                <div class="restverkauf-header">
+                    <h2><i class="fa-solid fa-bolt"></i> Freitags-Restverkauf!</h2>
+                    <p>Alle Wraps nur 1,50 €! Nur für sofortige Abholung und solange der Vorrat reicht.</p>
+                    <p>Nur vor Ort erhältlich.</p>
+                </div>
+                <div id="restverkauf-items-container">
+                    </div>
+            </div>
             <div class="pdf-menu-link-container">
     <p>Hier findest du unsere vollständige Speisekarte mit allen Snacks und Getränken, die du direkt vor Ort kaufen kannst.</p>
     <a href="./speisekarte.pdf" target="_blank" class="cta-button secondary-button">
@@ -325,6 +334,20 @@
                 </div>
             </div>
 
+
+             <div class="profile-card">
+                <h2>Konto verifizieren</h2>
+                <div class="profile-field">
+                    <label for="verification-pin">Verifizierungs-PIN</label>
+                    <input type="text" id="verification-pin" placeholder="PIN eingeben" maxlength="8" disabled>
+                    <small>Diese Funktion ist bald verfügbar, um sicherzustellen, dass die Plattform erst ab der 9. Klasse genutzt wird.</small>
+                </div>
+                <button id="verify-account-btn" class="cta-button" disabled>
+                    <span class="btn-text">Verifizieren</span>
+                </button>
+            </div>
+
+
             <div class="profile-card">
                 <h2>Benutzerprofil</h2>
                 <div class="profile-field">
@@ -365,11 +388,20 @@
                     <small>Mindestens 5,00 €. Das maximale Guthaben beträgt 100,00 €.</small>
                     <div id="topup-error-message" class="error-message" style="display: none; color: var(--error); font-size: 13px; margin-top: 5px;"></div>
                 </div>
+
+                <div class="profile-field">
+                    <label for="gift-pin">Guthabenkarte</label>
+                    <input type="text" id="gift-pin" placeholder="PIN eingeben" maxlength="8" disabled>
+                    <small>Diese Funktion ist bald verfügbar.</small>
+                </div>
+
                 <button id="topup-balance-btn" class="cta-button">
                     <span class="btn-text">Guthaben jetzt aufladen</span>
                     <span class="btn-spinner"></span>
                 </button>
             </div>
+
+           
             <hr class="profile-separator">
             
             <h3>Konto löschen</h3>
@@ -456,6 +488,23 @@
             <div id="admin-menu-container">
                 </div>
         </div>
+       
+
+        <div class="sub-section">
+            <h2>Restverkauf verwalten (Freitag ab 13 Uhr)</h2>
+            <p>Lege hier die Stückzahlen für den Restverkauf fest. Setze die Zahlen am Abend oder Samstag wieder auf 0 zurück.</p>
+            <div id="admin-restverkauf-container">
+                </div>
+            <div class="admin-restverkauf-actions">
+                 <button id="reset-restverkauf-btn" class="danger-button">
+                    <i class="fa-solid fa-trash"></i> Alle Restbestände zurücksetzen
+                </button>
+            </div>
+        </div>
+        <div class="sub-section user-management-section">
+            <h2>Nutzerverwaltung</h2>
+            <p>Suche nach Nutzern via exakter E-Mail-Adresse oder Benutzernamen, um deren Profil einzusehen und zu verwalten.</p>
+
         <div class="sub-section user-management-section">
             <h2>Nutzerverwaltung</h2>
             <p>Suche nach Nutzern via exakter E-Mail-Adresse oder Benutzernamen, um deren Profil einzusehen und zu verwalten.</p>
