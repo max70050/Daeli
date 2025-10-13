@@ -502,6 +502,7 @@
        
         <div class="sub-section user-management-section">
             <h2>Nutzerverwaltung</h2>
+            <h3>Nutzer bitte nur <strong>nach Absprache</strong> mit Mäxle sperren!</h3>
             <p>Suche nach Nutzern via exakter E-Mail-Adresse oder Benutzernamen, um deren Profil einzusehen und zu verwalten.</p>
             
             <div class="user-search-form">
@@ -519,6 +520,7 @@
 
         <div class="sub-section">
             <h2>Gemeldete Bestellungen</h2>
+            <h3>Nutzer bitte nur <strong>nach Absprache</strong> mit Mäxle sperren!</h3>
             <div id="reported-orders-list">
                 <p>Hier werden gemeldete Bestellungen zur Überprüfung angezeigt.</p>
             </div>
@@ -578,6 +580,13 @@
                     </ul>
                 </div>
                 
+                <div style="text-align: left; margin-bottom: 20px; font-size: 13px; color: #666;">
+    <input type="checkbox" id="agb-checkbox" style="width: auto; margin-right: 8px; vertical-align: middle;">
+    <label for="agb-checkbox">
+        Ich habe die <a href="agb.html" target="_blank" style="color: var(--brand); text-decoration: underline;">AGBs</a> gelesen und stimme ihnen zu.
+    </label>
+</div>
+
                 <button id="register-btn" disabled>
                     <span class="btn-text">Konto erstellen</span>
                     <span class="btn-spinner"></span>
@@ -592,12 +601,23 @@
 
 
             <div id="google-username-view" style="display: none;">
-                <h2>Noch ein Schritt</h2>
-                <p class="modal-info-text">Willkommen! Bitte wähle einen Benutzernamen, um deine Registrierung abzuschließen.</p>
-                <input type="text" id="google-username-input" placeholder="Wähle einen Benutzernamen" maxlength="15">
-                <div id="google-username-error-message" style="display: none; color: var(--error); text-align: left; font-size: 13px; margin-top: 5px;"></div>
-                <button id="google-username-submit-btn">Benutzernamen speichern</button>
-            </div>
+    <h2>Noch ein Schritt</h2>
+    <p class="modal-info-text">Willkommen! Bitte wähle einen Benutzernamen und bestätige die AGB, um deine Registrierung abzuschließen.</p>
+    <input type="text" id="google-username-input" placeholder="Wähle einen Benutzernamen" maxlength="15" minlength="5">
+    <div id="google-username-error-message" style="display: none; color: var(--error); text-align: left; font-size: 13px; margin-top: -10px; margin-bottom: 15px;"></div>
+
+    <div style="text-align: left; margin-bottom: 20px; font-size: 13px; color: #666;">
+        <input type="checkbox" id="google-agb-checkbox" style="width: auto; margin-right: 8px; vertical-align: middle;">
+        <label for="google-agb-checkbox">
+            Ich habe die <a href="agb.html" target="_blank" style="color: var(--brand); text-decoration: underline;">AGBs</a> gelesen und stimme ihnen zu.
+        </label>
+    </div>
+
+    <button id="google-username-submit-btn" disabled>
+        <span class="btn-text">Registrierung abschließen</span>
+        <span class="btn-spinner"></span>
+    </button>
+</div>
 
             <div id="password-reset-view" style="display: none;">
                 <div id="password-reset-initial-view">
@@ -729,6 +749,7 @@
                 <h4>Rechtliches</h4>
                 <p><a href="impressum.html">Impressum</a></p>
                 <p><a href="datenschutz.html">Datenschutz</a></p>
+                  <p><a href="agb.html">AGB</a></p> </div>
             </div>
             
         </div>

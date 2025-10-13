@@ -188,7 +188,7 @@ const checkoutBtn = document.getElementById('checkout-btn');
 const checkoutModal = document.getElementById('checkout-modal');
 const closeCheckoutButton = document.querySelector('.close-checkout-button');
 const cancelOrderBtn = document.getElementById('cancel-order-btn');
-
+const googleAgbCheckbox = document.getElementById('google-agb-checkbox');
 const checkoutTotalPrice = document.getElementById('checkout-total-price');
 const checkoutPickupDay = document.getElementById('checkout-pickup-day');
 const checkoutPickupTime = document.getElementById('checkout-pickup-time');
@@ -221,6 +221,7 @@ const archivedOrdersSection = document.getElementById('archived-orders-section')
 const archivedOrdersHeader = document.getElementById('archived-orders-header');
 const verifyAccountBtn = document.getElementById('verify-account-btn');
 const verificationPinInput = document.getElementById('verification-pin');
+const agbCheckbox = document.getElementById('agb-checkbox');
 
 
 const dayMapping = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
@@ -247,7 +248,16 @@ window.addEventListener('scroll', () => {
     }
     lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
 }, false);
+const validateGoogleRegistration = () => {
+    const username = googleUsernameInput.value.trim();
+    const agbChecked = googleAgbCheckbox.checked;
+    const isUsernameValid = username.length >= 5 && !forbiddenUsernameFragments.some(fragment => username.toLowerCase().includes(fragment));
 
+    googleUsernameSubmitBtn.disabled = !(isUsernameValid && agbChecked);
+};
+
+googleUsernameInput.addEventListener('input', validateGoogleRegistration);
+googleAgbCheckbox.addEventListener('change', validateGoogleRegistration);
 document.addEventListener('DOMContentLoaded', () => {
      if (history.scrollRestoration) {
         history.scrollRestoration = 'manual';
@@ -629,35 +639,69 @@ const handleGoogleAuth = async () => {
         const userDocSnap = await getDoc(userDocRef);
 
         if (!userDocSnap.exists()) {
-            await setDoc(userDocRef, {
-                username: user.displayName,
-                email: user.email,
-                createdAt: new Date(),
-                firstName: "", 
-                lastName: "", 
-                usernameChangesThisMonth: 0,
-                usernameLastChangeMonth: "none", 
-                firstNameChangeCount: 0,
-                lastNameChangeCount: 0,
-                isVerified: false,
-                isBlocked: false,
-                favorites: []
-            });
-            showNotification(`Willkommen, ${user.displayName}! Dein Konto wurde erstellt.`, 'success');
+            // NEU: Logik für neue Google-Nutzer
+            switchModalView(googleUsernameView);
+            googleUsernameInput.value = user.displayName || '';
+            googleAgbCheckbox.checked = false; // Checkbox zurücksetzen
+            validateGoogleRegistration(); // Button-Status initial prüfen
+
+            // Der Event-Listener wird nur einmalig für diesen Registrierungsprozess gesetzt
+            googleUsernameSubmitBtn.onclick = async () => {
+                const username = googleUsernameInput.value.trim();
+                if (username.length < 5 || !googleAgbCheckbox.checked) {
+                    showNotification("Bitte gib einen gültigen Benutzernamen an und akzeptiere die AGB.", "error");
+                    return;
+                }
+
+                setButtonLoading(googleUsernameSubmitBtn, true);
+
+                try {
+                    // Profil bei Firebase Auth aktualisieren
+                    await updateProfile(user, { displayName: username });
+
+                    // Dokument in Firestore erstellen
+                    await setDoc(userDocRef, {
+                        username: username,
+                        email: user.email,
+                        createdAt: new Date(),
+                        firstName: result.user.displayName.split(' ')[0] || "",
+                        lastName: result.user.displayName.split(' ').slice(1).join(' ') || "",
+                        usernameChangesThisMonth: 0,
+                        usernameLastChangeMonth: "none",
+                        firstNameChangeCount: 0,
+                        lastNameChangeCount: 0,
+                        isCoAdmin: false,
+                        isAdmin: false,
+                        isBlocked: false,
+                        isVerified: false, // Standardmäßig auf false
+                        balance: 0,
+                        favorites: []
+                    });
+
+                    closeModal();
+                    showNotification(`Willkommen, ${username}! Dein Konto wurde erfolgreich erstellt.`, 'success');
+                } catch (dbError) {
+                    showNotification('Fehler beim Speichern des Profils: ' + dbError.message, "error");
+                } finally {
+                    setButtonLoading(googleUsernameSubmitBtn, false);
+                }
+            };
         } else {
+            // Für bestehende Nutzer bleibt alles beim Alten
             showNotification(`Willkommen zurück, ${user.displayName}!`, 'success');
+            closeModal();
         }
-        closeModal();
     } catch (error) {
         console.error("Google Authentifizierungsfehler:", error);
         if (error.code === 'auth/popup-closed-by-user') {
-            showNotification('Die Anmeldung wurde abgebrochen.', 'error');
+            // Kein Fehler anzeigen, der Nutzer hat es nur geschlossen
+        } else if (error.code === 'auth/account-exists-with-different-credential') {
+             showNotification('Ein Konto mit dieser E-Mail existiert bereits. Bitte melde dich normal an.');
         } else {
             showNotification('Ein Fehler bei der Google-Anmeldung ist aufgetreten.', 'error');
         }
     }
 };
-
 function togglePasswordVisibility(passwordInput, toggleIcon) {
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
@@ -1677,7 +1721,8 @@ registerUsernameInput.addEventListener('input', () => {
     const hasUppercase = /[A-Z]/.test(pass);
     const hasNumber = /[0-9]/.test(pass);
     
-    registerBtn.disabled = !(hasLength && hasUppercase && hasNumber && isLengthValid && !isForbidden);
+    // GEÄNDERT: Die Prüfung 'agbCheckbox.checked' wurde hinzugefügt
+    registerBtn.disabled = !(hasLength && hasUppercase && hasNumber && isLengthValid && !isForbidden && agbCheckbox.checked);
 });
 
 googleUsernameInput.addEventListener('input', () => {
@@ -1708,9 +1753,13 @@ registerPasswordInput.addEventListener('input', () => {
 
     const isUsernameInvalid = registerUsernameInput.classList.contains('invalid');
     
-    registerBtn.disabled = !(hasLength && hasUppercase && hasNumber) || isUsernameInvalid;
+    // GEÄNDERT: Die Prüfung 'agbCheckbox.checked' wurde hinzugefügt
+    registerBtn.disabled = !(hasLength && hasUppercase && hasNumber && agbCheckbox.checked) || isUsernameInvalid;
 });
-
+agbCheckbox.addEventListener('change', () => {
+    // Simuliere ein 'input'-Event auf dem Passwortfeld, um die Button-Logik neu auszulösen
+    registerPasswordInput.dispatchEvent(new Event('input')); 
+});
 const handleLoginOnEnter = (event) => { if (event.key === 'Enter') { event.preventDefault(); loginBtn.click(); } };
 loginEmailInput.addEventListener('keydown', handleLoginOnEnter);
 loginPasswordInput.addEventListener('keydown', handleLoginOnEnter);
