@@ -334,19 +334,21 @@
                 </div>
             </div>
 
+            <div class="profile-card" id="verification-status-display" style="display: none;">
+                </div>
 
-             <div class="profile-card">
+            <div class="profile-card" id="verification-card">
                 <h2>Konto verifizieren</h2>
                 <div class="profile-field">
                     <label for="verification-pin">Verifizierungs-PIN</label>
-                    <input type="text" id="verification-pin" placeholder="PIN eingeben" maxlength="8" disabled>
-                    <small>Diese Funktion ist bald verfügbar, um sicherzustellen, dass die Plattform erst ab der 9. Klasse genutzt wird.</small>
+                    <input type="text" id="verification-pin" placeholder="8-stelligen PIN eingeben" maxlength="8">
+                    <small>Um die Plattform nutzen zu können, musst du dein Konto mit dem von der Schule bereitgestellten PIN verifizieren. Dies stellt sicher, dass nur Schüler ab der 9. Klasse bestellen können.</small>
                 </div>
-                <button id="verify-account-btn" class="cta-button" disabled>
+                <button id="verify-account-btn" class="cta-button">
                     <span class="btn-text">Verifizieren</span>
+                    <span class="btn-spinner"></span>
                 </button>
             </div>
-
 
             <div class="profile-card">
                 <h2>Benutzerprofil</h2>

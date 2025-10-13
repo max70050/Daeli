@@ -32,6 +32,14 @@ import {
     runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// --- NEU: EINSTELLUNGEN FÜR KONTOVERIFIZIERUNG ---
+// Setze dies auf 'true', um die PIN-Abfrage zu aktivieren, oder 'false', um sie zu deaktivieren.
+const ACCOUNT_VERIFICATION_ENABLED = true; 
+// Der 8-stellige Code, den Nutzer eingeben müssen. Du kannst ihn hier jederzeit ändern.
+const ACCOUNT_VERIFICATION_CODE = "00000000"; 
+// ----------------------------------------------------
+
+
 const firebaseConfig = {
     apiKey: "AIzaSyCNXQuFW6SLR_w5x1NxlLScp17LjppAuCA",
     authDomain: "schulmensa-9de80.firebaseapp.com",
@@ -211,6 +219,8 @@ const favoritesList = document.getElementById('favorites-list');
 const archivedOrdersListContainer = document.getElementById('archived-orders-list');
 const archivedOrdersSection = document.getElementById('archived-orders-section');
 const archivedOrdersHeader = document.getElementById('archived-orders-header');
+const verifyAccountBtn = document.getElementById('verify-account-btn');
+const verificationPinInput = document.getElementById('verification-pin');
 
 
 const dayMapping = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
@@ -629,8 +639,7 @@ const handleGoogleAuth = async () => {
                 usernameLastChangeMonth: "none", 
                 firstNameChangeCount: 0,
                 lastNameChangeCount: 0,
-                
-                 
+                isVerified: false,
                 isBlocked: false,
                 favorites: []
             });
@@ -670,6 +679,7 @@ const showPage = (pageToShow) => {
 
 const showHomePage = () => showPage(welcomeSection);
 
+// --- GEÄNDERT: VERIFIZIERUNGS-CHECK HINZUGEFÜGT ---
 const showOrderPage = async () => {
     const user = auth.currentUser;
     if (user && user.emailVerified) {
@@ -677,8 +687,16 @@ const showOrderPage = async () => {
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
             currentUserProfile = userDocSnap.data();
+
+            // NEU: Überprüft, ob das Konto verifiziert ist, falls die Funktion aktiviert ist
+            if (ACCOUNT_VERIFICATION_ENABLED && !currentUserProfile.isVerified) {
+                showNotification("Bitte verifiziere zuerst dein Konto, um bestellen zu können.", "error");
+                showProfilePage(); // Leitet den Nutzer zur Profilseite weiter
+                return; // Stoppt die weitere Ausführung
+            }
+
             if (currentUserProfile.isBlocked) {
-                showNotification("Dein Konto wurde für Bestellungen gesperrt. Falls du einwände hast wende dich bitte an einen Admin oder schreibe uns eine email.");
+                showNotification("Dein Konto wurde für Bestellungen gesperrt. Falls du Einwände hast, wende dich bitte an einen Admin oder schreibe uns eine E-Mail.");
                 showHomePage();
                 return;
             }
@@ -697,6 +715,7 @@ const showOrderPage = async () => {
         openModal();
     }
 };
+
 
 const showUserOrdersPage = () => {
     if (auth.currentUser) {
@@ -758,6 +777,7 @@ const showAdminToolsPage = () => {
     }
 };
 
+// --- GEÄNDERT: LOGIK FÜR VERIFIZIERUNGS-ANZEIGE HINZUGEFÜGT ---
 const showProfilePage = async () => {
     window.scrollTo({
         top: 0,
@@ -788,11 +808,32 @@ const showProfilePage = async () => {
             const firstNameChanges = data.firstNameChangeCount || 0;
             const lastNameChanges = data.lastNameChangeCount || 0;
             fullnameLimitInfo.textContent = `Vorname kann noch ${2 - firstNameChanges} Mal, Nachname noch ${2 - lastNameChanges} Mal geändert werden.`;
+
+            // NEU: Logik für die Verifizierungs-Anzeige
+            const verificationCard = document.getElementById('verification-card');
+            const verificationStatusDisplay = document.getElementById('verification-status-display');
+            if (ACCOUNT_VERIFICATION_ENABLED) {
+                if (data.isVerified) {
+                    verificationCard.style.display = 'none'; // Versteckt die Eingabemaske
+                    verificationStatusDisplay.innerHTML = `
+                        <h2>Kontostatus</h2>
+                        <p style="color: var(--success); font-weight: 600;">Dein Konto ist verifiziert. <i class="fa-solid fa-check-circle"></i></p>
+                    `;
+                    verificationStatusDisplay.style.display = 'block'; // Zeigt die Bestätigung
+                } else {
+                    verificationCard.style.display = 'block'; // Zeigt die Eingabemaske
+                    verificationStatusDisplay.style.display = 'none';
+                }
+            } else {
+                verificationCard.style.display = 'none'; // Versteckt alles, wenn Funktion deaktiviert ist
+                verificationStatusDisplay.style.display = 'none';
+            }
         }
     } else {
         openModal();
     }
 };
+
 
 async function checkForTopUpSuccess() {
     const params = new URLSearchParams(window.location.search);
@@ -1736,6 +1777,7 @@ registerBtn.addEventListener('click', async () => {
             firstNameChangeCount: 0,
             lastNameChangeCount: 0,
             isCoAdmin: false, isAdmin: false, isBlocked: false,
+            isVerified: false,
             balance: 0,
             favorites: []
         });
@@ -1841,6 +1883,7 @@ googleSignInBtn.addEventListener('click', async () => {
                         isCoAdmin: false,
                         isAdmin: false,
                         isBlocked: false,
+                        isVerified: false,
                         balance: 0,
                         favorites: []
                     });
@@ -2783,7 +2826,7 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
         const snapshot = await getDocs(ordersLastHourQuery);
         if (snapshot.size >= 5) {
             showNotification("Bestelllimit erreicht. Du kannst maximal 5 Bestellungen pro Stunde aufgeben.", "error");
-            setButtonLoading(confirmOrderBtn, false);
+            
             setButtonLoading(submitPaymentBtn, false);
             setButtonLoading(payWithBalanceBtn, false);
             return;
@@ -2837,7 +2880,7 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
         console.error("Fehler beim Senden der Bestellung: ", error);
         showNotification(`Ein Fehler ist aufgetreten: ${error.message}`, "error");
     } finally {
-        setButtonLoading(confirmOrderBtn, false);
+        
         setButtonLoading(payWithBalanceBtn, false);
         setLoading(false);
     }
@@ -3158,3 +3201,35 @@ if (adminRestverkaufContainer) {
 
     document.getElementById('reset-restverkauf-btn').addEventListener('click', resetAllStock);
 }
+
+// --- NEU: Event Listener für den Verifizierungs-Button ---
+verifyAccountBtn.addEventListener('click', async () => {
+    const user = auth.currentUser;
+    // Funktion wird nur ausgeführt, wenn der Nutzer angemeldet und die Verifizierung aktiviert ist
+    if (!user || !ACCOUNT_VERIFICATION_ENABLED) return;
+
+    const enteredPin = verificationPinInput.value.trim();
+    if (enteredPin.length === 0) {
+        showNotification("Bitte gib den Verifizierungs-PIN ein.", "error");
+        return;
+    }
+
+    if (enteredPin === ACCOUNT_VERIFICATION_CODE) {
+        setButtonLoading(verifyAccountBtn, true);
+        try {
+            const userDocRef = doc(db, "users", user.uid);
+            // Firestore-Dokument des Nutzers aktualisieren
+            await updateDoc(userDocRef, { isVerified: true });
+            showNotification("Dein Konto wurde erfolgreich verifiziert!", "success");
+            await showProfilePage(); // Profilansicht neu laden, um die Änderung anzuzeigen
+        } catch (error) {
+            console.error("Fehler bei der Verifizierung:", error);
+            showNotification("Ein Fehler ist aufgetreten. Bitte versuche es erneut.", "error");
+        } finally {
+            setButtonLoading(verifyAccountBtn, false);
+        }
+    } else {
+        showNotification("Der eingegebene PIN ist falsch.", "error");
+        verificationPinInput.value = ''; // Feld leeren bei falscher Eingabe
+    }
+});
