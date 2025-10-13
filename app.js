@@ -180,7 +180,7 @@ const checkoutBtn = document.getElementById('checkout-btn');
 const checkoutModal = document.getElementById('checkout-modal');
 const closeCheckoutButton = document.querySelector('.close-checkout-button');
 const cancelOrderBtn = document.getElementById('cancel-order-btn');
-const confirmOrderBtn = document.getElementById('confirm-order-btn');
+
 const checkoutTotalPrice = document.getElementById('checkout-total-price');
 const checkoutPickupDay = document.getElementById('checkout-pickup-day');
 const checkoutPickupTime = document.getElementById('checkout-pickup-time');
@@ -223,6 +223,21 @@ const getAuthUserAfterRedirect = () => new Promise((resolve, reject) => {
     }, reject);
 });
 
+const navbar = document.querySelector('.navbar');
+let lastScrollTop = 0;
+
+window.addEventListener('scroll', () => {
+    let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    if (scrollTop > 100) { 
+        if (scrollTop > lastScrollTop) {
+            navbar.classList.add('nav-hidden');
+        } else {
+            navbar.classList.remove('nav-hidden');
+        }
+    }
+    lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+}, false);
+
 document.addEventListener('DOMContentLoaded', () => {
      if (history.scrollRestoration) {
         history.scrollRestoration = 'manual';
@@ -242,8 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCustomSelect(customHourSelect);
     setupCustomSelect(customMinuteSelect);
-    populateHours();
-    populateMinutes();
+
     setupDaySelector();
     setupOrderTabs();
     checkStatus(); 
@@ -462,12 +476,13 @@ function setupCustomSelect(selectElement) {
     });
 
     options.addEventListener('click', (e) => {
-        if (e.target.classList.contains('custom-option')) {
+        // GEÄNDERT: Klicks auf deaktivierte Optionen ignorieren
+        if (e.target.classList.contains('custom-option') && !e.target.classList.contains('disabled')) {
             const currentlySelected = options.querySelector('.selected');
             if (currentlySelected) {
                 currentlySelected.classList.remove('selected');
             }
-            
+
             e.target.classList.add('selected');
             trigger.querySelector('span').textContent = e.target.textContent;
             selectElement.setAttribute('data-value', e.target.dataset.value);
@@ -477,6 +492,7 @@ function setupCustomSelect(selectElement) {
     });
 }
 
+// --- ERSETZE DIE GESAMTE FUNKTION HIERMIT ---
 function setupDaySelector() {
     const today = new Date();
     const currentDayIndex = today.getDay(); 
@@ -488,19 +504,20 @@ function setupDaySelector() {
         const buttonDay = button.dataset.day;
         const buttonDayIndex = dayIndexMapping[buttonDay];
         
-        if (currentDayIndex === 5 || currentDayIndex === 0) {
-            button.disabled = false;
+        button.classList.remove('active'); // Setze zuerst alle zurück
+        button.disabled = false; // Setze zuerst alle zurück
+
+        if (currentDayIndex > 5 || currentDayIndex === 0) { // Wochenende
             if (buttonDayIndex === 1 && !defaultDaySet) {
                 button.classList.add('active');
                 selectedPickupDay = buttonDay;
                 defaultDaySet = true;
             }
-        } else { 
+        } else { // Wochentag
             if (buttonDayIndex < currentDayIndex) {
                 button.disabled = true;
             } else {
-                button.disabled = false;
-                if (buttonDayIndex === currentDayIndex && !defaultDaySet) {
+                if (!defaultDaySet) { // Wähle den ersten verfügbaren Tag aus
                     button.classList.add('active');
                     selectedPickupDay = buttonDay;
                     defaultDaySet = true;
@@ -508,9 +525,11 @@ function setupDaySelector() {
             }
         }
     });
-    renderCart();
-}
 
+    // KORRIGIERT: Rufe die Zeit-Funktionen auf, NACHDEM der Tag festgelegt wurde.
+    populateHours();
+    populateMinutes();
+}
 function setupOrderTabs() {
     document.querySelectorAll('.orders-display-section').forEach(section => {
         const tabs = section.querySelector('.order-day-tabs');
@@ -539,10 +558,19 @@ pickupDaySelector.addEventListener('click', (e) => {
         });
         e.target.classList.add('active');
         selectedPickupDay = e.target.dataset.day;
+
+        // NEU: Zeitenauswahl aktualisieren und potenziell zurücksetzen
+        populateHours(); // Stunden neu laden (berücksichtigt jetzt, ob es heute ist)
+        // Alte Auswahl zurücksetzen, da sie ungültig sein könnte
+        customHourSelect.setAttribute('data-value', '');
+        customHourSelect.querySelector('span').textContent = '--';
+        customMinuteSelect.setAttribute('data-value', '');
+        customMinuteSelect.querySelector('span').textContent = '--';
+        populateMinutes(); // Minuten auch zurücksetzen
+
         renderCart();
     }
 });
-
 window.addEventListener('click', (e) => {
     document.querySelectorAll('.custom-select').forEach(select => {
         if (!select.contains(e.target)) {
@@ -601,8 +629,8 @@ const handleGoogleAuth = async () => {
                 usernameLastChangeMonth: "none", 
                 firstNameChangeCount: 0,
                 lastNameChangeCount: 0,
-                isCoAdmin: false, 
-                isAdmin: false, 
+                
+                 
                 isBlocked: false,
                 favorites: []
             });
@@ -683,6 +711,7 @@ const showUserOrdersPage = () => {
     } else {
         openModal();
     }
+     setupDaySelector();
 };
 
 const showManagementOrdersPage = () => {
@@ -833,26 +862,52 @@ const switchModalView = (viewToShow) => {
     });
 };
 
+// --- ERSETZE DIE KOMPLETTE FUNKTION ---
 const populateMinutes = (isFourteen = false) => {
     customMinuteOptions.innerHTML = '';
     const minutes = isFourteen ? ['00'] : ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
-    
+
+    const now = new Date();
+    const currentDayIndex = now.getDay();
+    const isToday = selectedPickupDay === dayMapping[currentDayIndex];
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const selectedHour = parseInt(customHourSelect.getAttribute('data-value'), 10);
+
     minutes.forEach(m => {
         const optionDiv = document.createElement('div');
         optionDiv.classList.add('custom-option');
         optionDiv.dataset.value = m;
         optionDiv.textContent = m;
+
+        // NEU: Deaktiviere Minuten, wenn sie heute schon vorbei sind
+        if (isToday && selectedHour === currentHour && parseInt(m, 10) < currentMinute) {
+            optionDiv.classList.add('disabled');
+        }
+
         customMinuteOptions.appendChild(optionDiv);
     });
 };
 
+// --- ERSETZE DIE KOMPLETTE FUNKTION ---
 const populateHours = () => {
     customHourOptions.innerHTML = '';
+    const now = new Date();
+    const currentDayIndex = now.getDay();
+    const isToday = selectedPickupDay === dayMapping[currentDayIndex];
+    const currentHour = now.getHours();
+
     for (let h = 11; h <= 14; h++) {
         const optionDiv = document.createElement('div');
         optionDiv.classList.add('custom-option');
         optionDiv.dataset.value = h;
         optionDiv.textContent = h;
+
+        // NEU: Deaktiviere die Stunde, wenn sie heute schon vorbei ist
+        if (isToday && h < currentHour) {
+            optionDiv.classList.add('disabled');
+        }
+
         customHourOptions.appendChild(optionDiv);
     }
 };
@@ -876,21 +931,29 @@ const renderCart = () => {
     } else {
         cartPlaceholder.style.display = 'none';
         itemIds.forEach(id => {
-            if (id === 'isRestverkauf') return;
-            const item = cart[id];
-            const itemTotal = item.price * item.quantity;
-            totalPrice += itemTotal;
+    if (id === 'isRestverkauf') return;
+    const item = cart[id];
+    const itemTotal = item.price * item.quantity;
+    totalPrice += itemTotal;
 
-            const li = document.createElement('li');
-            li.className = 'cart-item';
-            li.innerHTML = `
-                <div class="cart-item-details">
-                    <div class="cart-item-name">${item.quantity}x ${item.name}</div>
-                    <div class="cart-item-price">${item.price.toFixed(2).replace('.', ',')} €</div>
-                </div>
-                <div class="cart-item-total">${itemTotal.toFixed(2).replace('.', ',')} €</div>
-            `;
-            cartItemsList.appendChild(li);
+    const li = document.createElement('li');
+    li.className = 'cart-item';
+    
+    li.innerHTML = `
+        <div class="cart-item-details">
+            <span class="cart-item-name">${item.name}</span>
+            <span class="cart-item-price">${itemTotal.toFixed(2).replace('.', ',')} €</span>
+        </div>
+        <div class="cart-item-actions">
+            <button class="cart-quantity-btn" data-id="${id}" data-action="minus">-</button>
+            <span class="cart-quantity">${item.quantity}</span>
+            <button class="cart-quantity-btn" data-id="${id}" data-action="plus">+</button>
+            <button class="cart-remove-btn" data-id="${id}">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </div>
+    `;
+    cartItemsList.appendChild(li);
         });
     }
 
@@ -949,6 +1012,37 @@ const renderCart = () => {
     selectTimeNotice.style.display = timeNoticeVisible ? 'block' : 'none';
     checkoutBtn.disabled = isButtonDisabled;
 };
+
+// NEU: Event-Listener für die Aktionen im Warenkorb
+cartItemsList.addEventListener('click', (e) => {
+    const quantityBtn = e.target.closest('.cart-quantity-btn');
+    const removeBtn = e.target.closest('.cart-remove-btn');
+
+    if (quantityBtn) {
+        const id = quantityBtn.dataset.id;
+        const action = quantityBtn.dataset.action;
+        handleCartAction(id, action);
+    }
+
+    if (removeBtn) {
+        const id = removeBtn.dataset.id;
+
+        // Artikel komplett aus dem Warenkorb entfernen
+        delete cart[id];
+
+        // Menge im Hauptmenü auf 0 zurücksetzen
+        const allItemInstances = document.querySelectorAll(`.menu-item[data-id="${id}"]`);
+        allItemInstances.forEach(instance => {
+            const quantityDisplay = instance.querySelector('.quantity');
+            if (quantityDisplay) {
+                quantityDisplay.textContent = 0;
+            }
+        });
+
+        // Warenkorb neu rendern
+        renderCart();
+    }
+});
 
 if (userSearchBtn) {
     userSearchBtn.addEventListener('click', handleUserSearch);
@@ -2000,6 +2094,14 @@ confirmDeleteBtn.addEventListener('click', async () => {
 
 customHourSelect.addEventListener('change', () => {
     const selectedHour = customHourSelect.getAttribute('data-value');
+
+    // NEU: Prüfen, ob eine deaktivierte Option umgangen wurde (sollte nicht passieren, aber sicher ist sicher)
+    const selectedOption = customHourSelect.querySelector(`.custom-option[data-value="${selectedHour}"]`);
+    if (selectedOption && selectedOption.classList.contains('disabled')) {
+        customHourSelect.setAttribute('data-value', '');
+        customHourSelect.querySelector('span').textContent = '--';
+    }
+
     populateMinutes(selectedHour === '14');
     customMinuteSelect.setAttribute('data-value', '');
     customMinuteSelect.querySelector('span').textContent = '--';
@@ -2658,17 +2760,7 @@ async function checkStatus() {
     }
 }
 
-confirmOrderBtn.addEventListener('click', () => {
-    const hour = customHourSelect.getAttribute('data-value');
-    const minute = customMinuteSelect.getAttribute('data-value');
-    const orderCart = { ...cart };
-    const isRestverkauf = orderCart.hasOwnProperty('isRestverkauf');
-    if (isRestverkauf) delete orderCart.isRestverkauf;
-    
-    const pickupTime = isRestverkauf ? "Sofort" : `${hour}:${minute}`;
 
-    saveOrderToFirestore('Barzahlung', orderCart, selectedPickupDay, pickupTime, isRestverkauf);
-});
 
 async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, orderPickupTime, isRestverkauf = false) {
     const user = auth.currentUser;
@@ -2707,7 +2799,7 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
         return;
     }
 
-    if (paymentMethod === 'Barzahlung') setButtonLoading(confirmOrderBtn, true);
+    
     else if (paymentMethod === 'Guthaben') setButtonLoading(payWithBalanceBtn, true);
     else setLoading(true);
 

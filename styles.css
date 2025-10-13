@@ -52,8 +52,13 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     background: #333; 
     padding: 14px 30px;
     position: sticky;
-    top: -1;
+    top: 0;
     z-index: 1000;
+    transition: top 0.3s ease-in-out;
+}
+
+.navbar.nav-hidden {
+    top: -100px;
 }
 
 .nav-container {
@@ -195,9 +200,32 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     padding: 15px 30px;
     font-size: 16px;
     width: auto; 
+    
 }
 
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9em;
+    margin: 20px 0;
+}
 
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--line);
+}
+
+.divider:not(:empty)::before {
+    margin-right: .5em;
+}
+
+.divider:not(:empty)::after {
+    margin-left: .5em;
+}
 .secondary-button, .received-order-btn {
     background: #eee;
     color: var(--ink);
@@ -640,7 +668,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     padding: 25px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     position: sticky;
-    top: 12px; 
+    top: 100px; 
 }
 
 #cart-items-list {
@@ -1627,29 +1655,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     }
 }
 
-.divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.9em;
-    margin: 20px 0;
-}
 
-.divider::before,
-.divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid var(--line);
-}
-
-.divider:not(:empty)::before {
-    margin-right: .5em;
-}
-
-.divider:not(:empty)::after {
-    margin-left: .5em;
-}
 
 .google-signin-btn {
     background-color: #fff;
@@ -1796,12 +1802,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     line-height: 1.2;
 }
 
-#confirm-order-btn small {
-    font-weight: normal;
-    font-size: 0.75em;
-    opacity: 0.9;
-    margin-top: 4px;
-}
 
 .modal-button-group {
     flex-direction: column-reverse; 
@@ -1945,7 +1945,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 @media screen and (max-width: 850px) {
    #user-profile-link {
         font-size: 0.9em; /* Schrift leicht verkleinert, wie gewünscht */
-        max-width: 75px; /* Maximale Breite, bevor der Text gekürzt wird */
+        max-width: 90px; /* Maximale Breite, bevor der Text gekürzt wird */
         overflow: hidden; /* Versteckt den überfließenden Text */
         text-overflow: ellipsis; /* Fügt die "..." am Ende hinzu */
         white-space: nowrap; /* Verhindert, dass der Text umbricht */
@@ -2185,4 +2185,87 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 
 #verification-pin::placeholder {
   text-align: center;
+}
+
+/* NEU: Stile für die Warenkorb-Aktionen */
+.cart-item {
+    align-items: center; /* Sorgt für vertikale Zentrierung */
+}
+
+.cart-item-details {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.cart-item-name {
+    font-weight: 600;
+}
+
+.cart-item-price {
+    font-size: 0.9em;
+    color: var(--muted);
+}
+
+.cart-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 15px;
+}
+
+.cart-quantity {
+    font-weight: 600;
+    font-size: 1.1em;
+    min-width: 20px;
+    text-align: center;
+}
+
+.cart-quantity-btn {
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 1rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: #fafafa;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cart-quantity-btn:hover {
+    background: #e0e0e0;
+}
+
+.cart-remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1.1em;
+    padding: 5px;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.cart-remove-btn:hover {
+    color: var(--error);
+    transform: scale(1.1);
+}
+
+/* NEU: Stil für deaktivierte Optionen im Custom Select */
+.custom-option.disabled {
+    color: #ccc;
+    background-color: #f9f9f9;
+    cursor: not-allowed;
+    pointer-events: none; /* Verhindert Klick-Events auf dem Element */
+}
+
+.custom-option.disabled:hover {
+    background-color: #f9f9f9; /* Überschreibt den Hover-Effekt */
+    color: #ccc;
 }
