@@ -1,23 +1,23 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { 
-    getAuth, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, 
-    onAuthStateChanged, 
+import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
     signOut,
     sendEmailVerification,
     updateProfile,
     sendPasswordResetEmail,
-    deleteUser, 
-    EmailAuthProvider, 
+    deleteUser,
+    EmailAuthProvider,
     reauthenticateWithCredential,
     GoogleAuthProvider,
     signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
+import {
+    getFirestore,
+    doc,
+    setDoc,
     getDoc,
     onSnapshot,
     updateDoc,
@@ -32,13 +32,8 @@ import {
     runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --- NEU: EINSTELLUNGEN FÜR KONTOVERIFIZIERUNG ---
-// Setze dies auf 'true', um die PIN-Abfrage zu aktivieren, oder 'false', um sie zu deaktivieren.
-const ACCOUNT_VERIFICATION_ENABLED = true; 
-// Der 8-stellige Code, den Nutzer eingeben müssen. Du kannst ihn hier jederzeit ändern.
-const ACCOUNT_VERIFICATION_CODE = "00000000"; 
-// ----------------------------------------------------
-
+const ACCOUNT_VERIFICATION_ENABLED = true;
+const ACCOUNT_VERIFICATION_CODE = "00000000";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCNXQuFW6SLR_w5x1NxlLScp17LjppAuCA",
@@ -55,56 +50,39 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
-
 const forbiddenUsernameFragments = [
-    
     'admin', 'administrator', 'root', 'support', 'hilfe', 'gast',
     'moderator', 'system', 'info', 'kontakt', 'webmaster', 'sysadmin',
     'postmaster', 'staff', 'team', 'bot', 'robot', 'official',
     'offiziell', 'test', 'user', 'master', 'superuser', 'chef',
-
-    
     'arsch', 'fick', 'hure', 'nazi', 'hitler', 'scheisse', 'penis', 'vagina',
     'arschloch', 'fotze', 'muschi', 'wixer', 'wichser', 'schlampe',
     'nutte', 'miststück', 'bastard', 'depp', 'idiot', 'trottel', 'vollidiot',
     'spast', 'spasst', 'behinderte', 'kanake', 'neger', 'mistgeburt',
-
-    
     'bitch', 'fuck', 'shit', 'asshole', 'cunt', 'dick', 'pussy',
     'slut', 'whore', 'nigger', 'faggot', 'retard', 'douchebag',
-
-    
     'heil', 'ss', 'wehrmacht', 'gestapo', 'hakenkreuz', 'hknkrz',
     '88', '18', 'siegheil', 'is', 'isis', 'terrorist', 'alqaida',
-
-    
     'kaufen', 'verkaufen', 'sale', 'shop', 'angebot', 'deal',
     'cialis', 'viagra', 'casino', 'wett', 'poker',
-
-    
     'www', 'http', 'https', 'com', 'net', 'org', 'de', 'io',
-
-    
     'schwarz', 'dæli', 'mensa', 'hm', 'HM', 'Hm', 'hM'
 ];
 
 let cart = {};
 let currentUserProfile = null;
 let selectedPickupDay = null;
+let searchDebounceTimer;
 
-let searchDebounceTimer; 
-
-
-const stripe = Stripe("pk_test_51SEri0AmYRR9jDsfQRpujMicuceGW065Ayzz1yFe34uA0pOlFuxjyInkwZvFdCYBOdEHgOscKInwfb3xDYrDSGo100jgxcjLYi"); 
-const backendUrl = 'https://daeli-backend.onrender.com'; 
+const stripe = Stripe("pk_test_51SEri0AmYRR9jDsfQRpujMicuceGW065Ayzz1yFe34uA0pOlFuxjyInkwZvFdCYBOdEHgOscKInwfb3xDYrDSGo100jgxcjLYi");
+const backendUrl = 'https://daeli-backend.onrender.com';
 let elements;
-
 
 const restverkaufSection = document.getElementById('restverkauf-section');
 const restverkaufItemsContainer = document.getElementById('restverkauf-items-container');
 const adminRestverkaufContainer = document.getElementById('admin-restverkauf-container');
-const WRAP_IDS = ['4', '5', '6']; // IDs aller Wrap-Produkte
-const SALE_PRICE = 1.50; // Preis für den Restverkauf
+const WRAP_IDS = ['4', '5', '6'];
+const SALE_PRICE = 1.50;
 const profileBalance = document.getElementById('profile-balance');
 const topupAmountInput = document.getElementById('topup-amount');
 const topupBalanceBtn = document.getElementById('topup-balance-btn');
@@ -148,11 +126,11 @@ const loginView = document.getElementById('login-view');
 const registerView = document.getElementById('register-view');
 const googleUsernameView = document.getElementById('google-username-view');
 const verificationMessage = document.getElementById('verification-message');
-const passwordResetView = document.getElementById('password-reset-view'); 
+const passwordResetView = document.getElementById('password-reset-view');
 const showRegisterLink = document.getElementById('show-register');
 const showLoginLink = document.getElementById('show-login');
-const showPasswordResetLink = document.getElementById('show-password-reset'); 
-const backToLoginLink = document.getElementById('back-to-login'); 
+const showPasswordResetLink = document.getElementById('show-password-reset');
+const backToLoginLink = document.getElementById('back-to-login');
 const loginEmailInput = document.getElementById('login-email');
 const loginPasswordInput = document.getElementById('login-password');
 const loginBtn = document.getElementById('login-btn');
@@ -164,8 +142,8 @@ const googleSignInBtn = document.getElementById('google-signin-btn');
 const googleUsernameInput = document.getElementById('google-username-input');
 const googleUsernameSubmitBtn = document.getElementById('google-username-submit-btn');
 const googleRegisterBtn = document.getElementById('google-register-btn');
-const resetEmailInput = document.getElementById('reset-email'); 
-const sendResetEmailBtn = document.getElementById('send-reset-email-btn'); 
+const resetEmailInput = document.getElementById('reset-email');
+const sendResetEmailBtn = document.getElementById('send-reset-email-btn');
 const profileEmail = document.getElementById('profile-email');
 const resetPasswordBtn = document.getElementById('reset-password-btn');
 const profileUsername = document.getElementById('profile-username');
@@ -175,11 +153,11 @@ const saveProfileBtn = document.getElementById('save-profile-btn');
 const usernameLimitInfo = document.getElementById('username-limit-info');
 const fullnameLimitInfo = document.getElementById('fullname-limit-info');
 const discardProfileBtn = document.getElementById('discard-profile-btn');
-const deleteAccountBtn = document.getElementById('delete-account-btn'); 
-const reauthDeleteModal = document.getElementById('reauth-delete-modal'); 
-const closeReauthButton = document.querySelector('.close-reauth-button'); 
-const reauthPasswordInput = document.getElementById('reauth-password'); 
-const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); 
+const deleteAccountBtn = document.getElementById('delete-account-btn');
+const reauthDeleteModal = document.getElementById('reauth-delete-modal');
+const closeReauthButton = document.querySelector('.close-reauth-button');
+const reauthPasswordInput = document.getElementById('reauth-password');
+const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 const menuContainer = document.querySelector('.menu-container');
 const cartItemsList = document.getElementById('cart-items-list');
 const cartPlaceholder = document.getElementById('cart-placeholder');
@@ -223,13 +201,12 @@ const verifyAccountBtn = document.getElementById('verify-account-btn');
 const verificationPinInput = document.getElementById('verification-pin');
 const agbCheckbox = document.getElementById('agb-checkbox');
 
-
 const dayMapping = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 const dayIndexMapping = { "Montag": 1, "Dienstag": 2, "Mittwoch": 3, "Donnerstag": 4, "Freitag": 5 };
 
 const getAuthUserAfterRedirect = () => new Promise((resolve, reject) => {
     const unsubscribe = onAuthStateChanged(auth, user => {
-        unsubscribe(); 
+        unsubscribe();
         resolve(user);
     }, reject);
 });
@@ -239,7 +216,7 @@ let lastScrollTop = 0;
 
 window.addEventListener('scroll', () => {
     let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    if (scrollTop > 100) { 
+    if (scrollTop > 100) {
         if (scrollTop > lastScrollTop) {
             navbar.classList.add('nav-hidden');
         } else {
@@ -248,21 +225,23 @@ window.addEventListener('scroll', () => {
     }
     lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
 }, false);
+
 const validateGoogleRegistration = () => {
     const username = googleUsernameInput.value.trim();
     const agbChecked = googleAgbCheckbox.checked;
     const isUsernameValid = username.length >= 5 && !forbiddenUsernameFragments.some(fragment => username.toLowerCase().includes(fragment));
-
     googleUsernameSubmitBtn.disabled = !(isUsernameValid && agbChecked);
 };
 
 googleUsernameInput.addEventListener('input', validateGoogleRegistration);
 googleAgbCheckbox.addEventListener('change', validateGoogleRegistration);
+
 document.addEventListener('DOMContentLoaded', () => {
-     if (history.scrollRestoration) {
+    if (history.scrollRestoration) {
         history.scrollRestoration = 'manual';
     }
     window.scrollTo(0, 0);
+
     const cookieBanner = document.getElementById('cookie-banner');
     const acceptBtn = document.getElementById('cookie-accept-btn');
 
@@ -277,12 +256,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCustomSelect(customHourSelect);
     setupCustomSelect(customMinuteSelect);
-
     setupDaySelector();
     setupOrderTabs();
-    checkStatus(); 
+    checkStatus();
     setupInputValidation();
-    checkAndDisplayRestverkauf(); // Hinzugefügt für den Fall, dass die Seite direkt geladen wird
+    checkAndDisplayRestverkauf();
 });
 
 if (userSearchInput) {
@@ -339,15 +317,13 @@ async function fetchMenuStatus() {
 async function renderAdminMenu() {
     if (!adminMenuContainer) return;
     adminMenuContainer.innerHTML = '<p>Lade Speisekarte...</p>';
-    
-    await fetchMenuStatus();
 
+    await fetchMenuStatus();
     adminMenuContainer.innerHTML = '';
 
     for (const id in products) {
         const product = products[id];
         const isSoldOut = currentMenuStatus[id] === true;
-
         const itemDiv = document.createElement('div');
         itemDiv.className = `admin-menu-item ${isSoldOut ? 'sold-out' : ''}`;
         itemDiv.dataset.id = id;
@@ -357,13 +333,12 @@ async function renderAdminMenu() {
 
         itemDiv.innerHTML = `
             <span class="admin-item-info">${product.name}</span>
-            <button class="${buttonClass}">
-                ${buttonText}
-            </button>
+            <button class="${buttonClass}">${buttonText}</button>
         `;
         adminMenuContainer.appendChild(itemDiv);
     }
 }
+
 async function toggleSoldOutStatus(itemId) {
     const isCurrentlySoldOut = currentMenuStatus[itemId] === true;
     const newStatus = !isCurrentlySoldOut;
@@ -371,15 +346,14 @@ async function toggleSoldOutStatus(itemId) {
     try {
         const itemRef = doc(db, "menuStatus", itemId);
         await setDoc(itemRef, { isSoldOut: newStatus });
-        
         showNotification(`"${products[itemId].name}" wurde als ${newStatus ? 'ausverkauft' : 'verfügbar'} markiert.`, "success");
-        
+
         currentMenuStatus[itemId] = newStatus;
         const itemElement = adminMenuContainer.querySelector(`.admin-menu-item[data-id="${itemId}"]`);
         const buttonElement = itemElement.querySelector('button');
-        
+
         itemElement.classList.toggle('sold-out', newStatus);
-        
+
         if (newStatus) {
             buttonElement.classList.remove('danger-button', 'toggle-sold-out-btn');
             buttonElement.classList.add('make-available-btn');
@@ -389,9 +363,8 @@ async function toggleSoldOutStatus(itemId) {
             buttonElement.classList.add('danger-button', 'toggle-sold-out-btn');
             buttonElement.textContent = 'Ausverkauft';
         }
-        
-        updateCustomerMenuView();
 
+        updateCustomerMenuView();
     } catch (error) {
         console.error("Fehler beim Umschalten des Status:", error);
         showNotification("Status konnte nicht geändert werden.", "error");
@@ -413,14 +386,12 @@ function updateCustomerMenuView() {
     document.querySelectorAll('#order-section .menu-item').forEach(itemElem => {
         const itemId = itemElem.dataset.id;
         const isSoldOut = currentMenuStatus[itemId] === true;
-        
         itemElem.classList.toggle('sold-out', isSoldOut);
     });
 }
 
 topupBalanceBtn.addEventListener('click', handleTopUpBalance);
 payWithBalanceBtn.addEventListener('click', handlePayWithBalance);
-
 backToLoginFromSentLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(loginView); });
 
 hamburgerMenu.addEventListener('click', () => {
@@ -486,7 +457,6 @@ const setupInputValidation = () => {
     });
 };
 
-
 function setupCustomSelect(selectElement) {
     const trigger = selectElement.querySelector('.custom-select-trigger');
     const options = selectElement.querySelector('.custom-options');
@@ -496,13 +466,11 @@ function setupCustomSelect(selectElement) {
     });
 
     options.addEventListener('click', (e) => {
-        // GEÄNDERT: Klicks auf deaktivierte Optionen ignorieren
         if (e.target.classList.contains('custom-option') && !e.target.classList.contains('disabled')) {
             const currentlySelected = options.querySelector('.selected');
             if (currentlySelected) {
                 currentlySelected.classList.remove('selected');
             }
-
             e.target.classList.add('selected');
             trigger.querySelector('span').textContent = e.target.textContent;
             selectElement.setAttribute('data-value', e.target.dataset.value);
@@ -512,32 +480,29 @@ function setupCustomSelect(selectElement) {
     });
 }
 
-// --- ERSETZE DIE GESAMTE FUNKTION HIERMIT ---
 function setupDaySelector() {
     const today = new Date();
-    const currentDayIndex = today.getDay(); 
-
+    const currentDayIndex = today.getDay();
     const buttons = pickupDaySelector.querySelectorAll('button');
     let defaultDaySet = false;
 
     buttons.forEach(button => {
         const buttonDay = button.dataset.day;
         const buttonDayIndex = dayIndexMapping[buttonDay];
-        
-        button.classList.remove('active'); // Setze zuerst alle zurück
-        button.disabled = false; // Setze zuerst alle zurück
+        button.classList.remove('active');
+        button.disabled = false;
 
-        if (currentDayIndex > 5 || currentDayIndex === 0) { // Wochenende
+        if (currentDayIndex > 5 || currentDayIndex === 0) {
             if (buttonDayIndex === 1 && !defaultDaySet) {
                 button.classList.add('active');
                 selectedPickupDay = buttonDay;
                 defaultDaySet = true;
             }
-        } else { // Wochentag
+        } else {
             if (buttonDayIndex < currentDayIndex) {
                 button.disabled = true;
             } else {
-                if (!defaultDaySet) { // Wähle den ersten verfügbaren Tag aus
+                if (!defaultDaySet) {
                     button.classList.add('active');
                     selectedPickupDay = buttonDay;
                     defaultDaySet = true;
@@ -546,10 +511,10 @@ function setupDaySelector() {
         }
     });
 
-    // KORRIGIERT: Rufe die Zeit-Funktionen auf, NACHDEM der Tag festgelegt wurde.
     populateHours();
     populateMinutes();
 }
+
 function setupOrderTabs() {
     document.querySelectorAll('.orders-display-section').forEach(section => {
         const tabs = section.querySelector('.order-day-tabs');
@@ -559,7 +524,6 @@ function setupOrderTabs() {
                     const day = e.target.dataset.day;
                     tabs.querySelector('.active')?.classList.remove('active');
                     e.target.classList.add('active');
-
                     if (section.id === 'user-orders-section') {
                         renderUserOrders(day);
                     } else if (section.id === 'management-orders-section') {
@@ -579,18 +543,16 @@ pickupDaySelector.addEventListener('click', (e) => {
         e.target.classList.add('active');
         selectedPickupDay = e.target.dataset.day;
 
-        // NEU: Zeitenauswahl aktualisieren und potenziell zurücksetzen
-        populateHours(); // Stunden neu laden (berücksichtigt jetzt, ob es heute ist)
-        // Alte Auswahl zurücksetzen, da sie ungültig sein könnte
+        populateHours();
         customHourSelect.setAttribute('data-value', '');
         customHourSelect.querySelector('span').textContent = '--';
         customMinuteSelect.setAttribute('data-value', '');
         customMinuteSelect.querySelector('span').textContent = '--';
-        populateMinutes(); // Minuten auch zurücksetzen
-
+        populateMinutes();
         renderCart();
     }
 });
+
 window.addEventListener('click', (e) => {
     document.querySelectorAll('.custom-select').forEach(select => {
         if (!select.contains(e.target)) {
@@ -609,7 +571,6 @@ const showNotification = (message, type = 'error') => {
     document.body.appendChild(notification);
 
     setTimeout(() => notification.classList.add('show'), 10);
-
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 500);
@@ -639,27 +600,20 @@ const handleGoogleAuth = async () => {
         const userDocSnap = await getDoc(userDocRef);
 
         if (!userDocSnap.exists()) {
-            // NEU: Logik für neue Google-Nutzer
             switchModalView(googleUsernameView);
             googleUsernameInput.value = user.displayName || '';
-            googleAgbCheckbox.checked = false; // Checkbox zurücksetzen
-            validateGoogleRegistration(); // Button-Status initial prüfen
+            googleAgbCheckbox.checked = false;
+            validateGoogleRegistration();
 
-            // Der Event-Listener wird nur einmalig für diesen Registrierungsprozess gesetzt
             googleUsernameSubmitBtn.onclick = async () => {
                 const username = googleUsernameInput.value.trim();
                 if (username.length < 5 || !googleAgbCheckbox.checked) {
                     showNotification("Bitte gib einen gültigen Benutzernamen an und akzeptiere die AGB.", "error");
                     return;
                 }
-
                 setButtonLoading(googleUsernameSubmitBtn, true);
-
                 try {
-                    // Profil bei Firebase Auth aktualisieren
                     await updateProfile(user, { displayName: username });
-
-                    // Dokument in Firestore erstellen
                     await setDoc(userDocRef, {
                         username: username,
                         email: user.email,
@@ -673,11 +627,10 @@ const handleGoogleAuth = async () => {
                         isCoAdmin: false,
                         isAdmin: false,
                         isBlocked: false,
-                        isVerified: false, // Standardmäßig auf false
+                        isVerified: false,
                         balance: 0,
                         favorites: []
                     });
-
                     closeModal();
                     showNotification(`Willkommen, ${username}! Dein Konto wurde erfolgreich erstellt.`, 'success');
                 } catch (dbError) {
@@ -687,21 +640,21 @@ const handleGoogleAuth = async () => {
                 }
             };
         } else {
-            // Für bestehende Nutzer bleibt alles beim Alten
             showNotification(`Willkommen zurück, ${user.displayName}!`, 'success');
             closeModal();
         }
     } catch (error) {
         console.error("Google Authentifizierungsfehler:", error);
         if (error.code === 'auth/popup-closed-by-user') {
-            // Kein Fehler anzeigen, der Nutzer hat es nur geschlossen
+            // No error shown
         } else if (error.code === 'auth/account-exists-with-different-credential') {
-             showNotification('Ein Konto mit dieser E-Mail existiert bereits. Bitte melde dich normal an.');
+            showNotification('Ein Konto mit dieser E-Mail existiert bereits. Bitte melde dich normal an.');
         } else {
             showNotification('Ein Fehler bei der Google-Anmeldung ist aufgetreten.', 'error');
         }
     }
 };
+
 function togglePasswordVisibility(passwordInput, toggleIcon) {
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
@@ -723,7 +676,6 @@ const showPage = (pageToShow) => {
 
 const showHomePage = () => showPage(welcomeSection);
 
-// --- GEÄNDERT: VERIFIZIERUNGS-CHECK HINZUGEFÜGT ---
 const showOrderPage = async () => {
     const user = auth.currentUser;
     if (user && user.emailVerified) {
@@ -732,11 +684,10 @@ const showOrderPage = async () => {
         if (userDocSnap.exists()) {
             currentUserProfile = userDocSnap.data();
 
-            // NEU: Überprüft, ob das Konto verifiziert ist, falls die Funktion aktiviert ist
             if (ACCOUNT_VERIFICATION_ENABLED && !currentUserProfile.isVerified) {
                 showNotification("Bitte verifiziere zuerst dein Konto, um bestellen zu können.", "error");
-                showProfilePage(); // Leitet den Nutzer zur Profilseite weiter
-                return; // Stoppt die weitere Ausführung
+                showProfilePage();
+                return;
             }
 
             if (currentUserProfile.isBlocked) {
@@ -746,25 +697,21 @@ const showOrderPage = async () => {
             }
         }
         showPage(orderSection);
-        
         await fetchMenuStatus();
         updateCustomerMenuView();
-        
         renderCart();
         renderFavorites();
         updateFavoriteIcons();
-        
-        checkAndDisplayRestverkauf(); 
+        checkAndDisplayRestverkauf();
     } else {
         openModal();
     }
 };
 
-
 const showUserOrdersPage = () => {
     if (auth.currentUser) {
         showPage(userOrdersSection);
-        const today = new Date().getDay(); 
+        const today = new Date().getDay();
         const defaultDay = (today === 0 || today === 6) ? "Montag" : dayMapping[today];
         const tabs = userOrdersSection.querySelector('.order-day-tabs');
         tabs.querySelector('.active')?.classList.remove('active');
@@ -774,13 +721,13 @@ const showUserOrdersPage = () => {
     } else {
         openModal();
     }
-     setupDaySelector();
+    setupDaySelector();
 };
 
 const showManagementOrdersPage = () => {
     if (auth.currentUser) {
         showPage(managementOrdersSection);
-        const today = new Date().getDay(); 
+        const today = new Date().getDay();
         const defaultDay = (today === 0 || today === 6) ? "Montag" : dayMapping[today];
         const tabs = managementOrdersSection.querySelector('.order-day-tabs');
         tabs.querySelector('.active')?.classList.remove('active');
@@ -791,14 +738,13 @@ const showManagementOrdersPage = () => {
     }
 };
 
-
 const resetCheckoutModalState = () => {
     paymentElementContainer.style.display = 'none';
     checkoutInitialView.style.display = 'block';
 
     const btnText = startOnlinePaymentBtn.querySelector('.btn-text');
     const btnSpinner = startOnlinePaymentBtn.querySelector('.btn-spinner');
-    
+
     startOnlinePaymentBtn.disabled = false;
     if (btnText) btnText.style.display = 'inline';
     if (btnSpinner) btnSpinner.style.display = 'none';
@@ -815,18 +761,14 @@ const showAdminToolsPage = () => {
         renderReportedOrders();
         renderAdminStats();
         renderAdminMenu();
-        renderRestverkaufAdmin(); 
+        renderRestverkaufAdmin();
     } else {
         openModal();
     }
 };
 
-// --- GEÄNDERT: LOGIK FÜR VERIFIZIERUNGS-ANZEIGE HINZUGEFÜGT ---
 const showProfilePage = async () => {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (auth.currentUser) {
         showPage(profileSection);
@@ -853,23 +795,22 @@ const showProfilePage = async () => {
             const lastNameChanges = data.lastNameChangeCount || 0;
             fullnameLimitInfo.textContent = `Vorname kann noch ${2 - firstNameChanges} Mal, Nachname noch ${2 - lastNameChanges} Mal geändert werden.`;
 
-            // NEU: Logik für die Verifizierungs-Anzeige
             const verificationCard = document.getElementById('verification-card');
             const verificationStatusDisplay = document.getElementById('verification-status-display');
             if (ACCOUNT_VERIFICATION_ENABLED) {
                 if (data.isVerified) {
-                    verificationCard.style.display = 'none'; // Versteckt die Eingabemaske
+                    verificationCard.style.display = 'none';
                     verificationStatusDisplay.innerHTML = `
                         <h2>Kontostatus</h2>
                         <p style="color: var(--success); font-weight: 600;">Dein Konto ist verifiziert. <i class="fa-solid fa-check-circle"></i></p>
                     `;
-                    verificationStatusDisplay.style.display = 'block'; // Zeigt die Bestätigung
+                    verificationStatusDisplay.style.display = 'block';
                 } else {
-                    verificationCard.style.display = 'block'; // Zeigt die Eingabemaske
+                    verificationCard.style.display = 'block';
                     verificationStatusDisplay.style.display = 'none';
                 }
             } else {
-                verificationCard.style.display = 'none'; // Versteckt alles, wenn Funktion deaktiviert ist
+                verificationCard.style.display = 'none';
                 verificationStatusDisplay.style.display = 'none';
             }
         }
@@ -878,14 +819,13 @@ const showProfilePage = async () => {
     }
 };
 
-
 async function checkForTopUpSuccess() {
     const params = new URLSearchParams(window.location.search);
     const user = auth.currentUser;
 
     if (params.has('topup_success') && params.has('session_id') && user) {
         const sessionId = params.get('session_id');
-        
+
         if (localStorage.getItem('last_session_id') === sessionId) {
             window.history.replaceState(null, '', window.location.pathname);
             return;
@@ -896,25 +836,23 @@ async function checkForTopUpSuccess() {
             const sessionData = await response.json();
 
             if (sessionData.client_reference_id !== user.uid) {
-                 throw new Error("Session-Benutzer stimmt nicht mit angemeldetem Benutzer überein.");
+                throw new Error("Session-Benutzer stimmt nicht mit angemeldetem Benutzer überein.");
             }
-            
-            const amountAdded = sessionData.amount_total / 100;
 
+            const amountAdded = sessionData.amount_total / 100;
             const userRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userRef);
             const currentBalance = userDoc.data().balance || 0;
             const newBalance = currentBalance + amountAdded;
-            
+
             await updateDoc(userRef, { balance: newBalance });
-            
+
             localStorage.setItem('last_session_id', sessionId);
             showNotification(`Dein Guthaben wurde erfolgreich um ${amountAdded.toFixed(2)} € aufgeladen.`, 'success');
-            
+
             if (profileSection.style.display !== 'none') {
                 showProfilePage();
             }
-
         } catch (error) {
             console.error("Fehler beim Verarbeiten der Top-Up-Session:", error);
             showNotification("Es gab ein Problem bei der Aktualisierung Ihres Guthabens. Bitte kontaktieren Sie den Support.", "error");
@@ -927,7 +865,6 @@ async function checkForTopUpSuccess() {
     }
 }
 
-
 const openModal = () => {
     loginView.style.display = 'block';
     registerView.style.display = 'none';
@@ -935,8 +872,7 @@ const openModal = () => {
     passwordResetView.style.display = 'none';
     passwordResetInitialView.style.display = 'block';
     passwordResetSentView.style.display = 'none';
-
-    authModal.style.display = 'flex'; 
+    authModal.style.display = 'flex';
 };
 
 const closeModal = () => { authModal.style.display = 'none'; };
@@ -947,11 +883,9 @@ const switchModalView = (viewToShow) => {
     });
 };
 
-// --- ERSETZE DIE KOMPLETTE FUNKTION ---
 const populateMinutes = (isFourteen = false) => {
     customMinuteOptions.innerHTML = '';
     const minutes = isFourteen ? ['00'] : ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
-
     const now = new Date();
     const currentDayIndex = now.getDay();
     const isToday = selectedPickupDay === dayMapping[currentDayIndex];
@@ -964,17 +898,13 @@ const populateMinutes = (isFourteen = false) => {
         optionDiv.classList.add('custom-option');
         optionDiv.dataset.value = m;
         optionDiv.textContent = m;
-
-        // NEU: Deaktiviere Minuten, wenn sie heute schon vorbei sind
         if (isToday && selectedHour === currentHour && parseInt(m, 10) < currentMinute) {
             optionDiv.classList.add('disabled');
         }
-
         customMinuteOptions.appendChild(optionDiv);
     });
 };
 
-// --- ERSETZE DIE KOMPLETTE FUNKTION ---
 const populateHours = () => {
     customHourOptions.innerHTML = '';
     const now = new Date();
@@ -987,16 +917,12 @@ const populateHours = () => {
         optionDiv.classList.add('custom-option');
         optionDiv.dataset.value = h;
         optionDiv.textContent = h;
-
-        // NEU: Deaktiviere die Stunde, wenn sie heute schon vorbei ist
         if (isToday && h < currentHour) {
             optionDiv.classList.add('disabled');
         }
-
         customHourOptions.appendChild(optionDiv);
     }
 };
-
 
 const renderCart = () => {
     cartItemsList.innerHTML = '';
@@ -1004,7 +930,6 @@ const renderCart = () => {
     const maxOrderValueNotice = document.getElementById('max-order-value-notice');
     const selectDayNotice = document.getElementById('select-day-notice');
     const selectTimeNotice = document.getElementById('select-time-notice');
-
     profileCompletionNotice.innerHTML = '';
 
     let totalPrice = 0;
@@ -1016,29 +941,25 @@ const renderCart = () => {
     } else {
         cartPlaceholder.style.display = 'none';
         itemIds.forEach(id => {
-    if (id === 'isRestverkauf') return;
-    const item = cart[id];
-    const itemTotal = item.price * item.quantity;
-    totalPrice += itemTotal;
-
-    const li = document.createElement('li');
-    li.className = 'cart-item';
-    
-    li.innerHTML = `
-        <div class="cart-item-details">
-            <span class="cart-item-name">${item.name}</span>
-            <span class="cart-item-price">${itemTotal.toFixed(2).replace('.', ',')} €</span>
-        </div>
-        <div class="cart-item-actions">
-            <button class="cart-quantity-btn" data-id="${id}" data-action="minus">-</button>
-            <span class="cart-quantity">${item.quantity}</span>
-            <button class="cart-quantity-btn" data-id="${id}" data-action="plus">+</button>
-            <button class="cart-remove-btn" data-id="${id}">
-                <i class="fa-solid fa-trash-can"></i>
-            </button>
-        </div>
-    `;
-    cartItemsList.appendChild(li);
+            if (id === 'isRestverkauf') return;
+            const item = cart[id];
+            const itemTotal = item.price * item.quantity;
+            totalPrice += itemTotal;
+            const li = document.createElement('li');
+            li.className = 'cart-item';
+            li.innerHTML = `
+                <div class="cart-item-details">
+                    <span class="cart-item-name">${item.name}</span>
+                    <span class="cart-item-price">${itemTotal.toFixed(2).replace('.', ',')} €</span>
+                </div>
+                <div class="cart-item-actions">
+                    <button class="cart-quantity-btn" data-id="${id}" data-action="minus">-</button>
+                    <span class="cart-quantity">${item.quantity}</span>
+                    <button class="cart-quantity-btn" data-id="${id}" data-action="plus">+</button>
+                    <button class="cart-remove-btn" data-id="${id}"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `;
+            cartItemsList.appendChild(li);
         });
     }
 
@@ -1054,16 +975,13 @@ const renderCart = () => {
     const hour = customHourSelect.getAttribute('data-value');
     const minute = customMinuteSelect.getAttribute('data-value');
 
-    if (totalPrice === 0) {
-        isButtonDisabled = true;
-    }
+    if (totalPrice === 0) isButtonDisabled = true;
 
     if (!cart.isRestverkauf) {
         if (!selectedPickupDay) {
             dayNoticeVisible = true;
             isButtonDisabled = true;
         }
-
         if (!hour || !minute) {
             timeNoticeVisible = true;
             isButtonDisabled = true;
@@ -1081,9 +999,7 @@ const renderCart = () => {
             profileCompletionNotice.innerHTML = `
                 Vervollständige dein Profil für Bestellungen über 10,00 €.
                 <br>
-                <button id="go-to-profile-from-cart-btn" class="profile-notice-btn">
-                    Zum Profil
-                </button>
+                <button id="go-to-profile-from-cart-btn" class="profile-notice-btn">Zum Profil</button>
             `;
             document.getElementById('go-to-profile-from-cart-btn')?.addEventListener('click', showProfilePage);
             profileNoticeVisible = true;
@@ -1098,7 +1014,6 @@ const renderCart = () => {
     checkoutBtn.disabled = isButtonDisabled;
 };
 
-// NEU: Event-Listener für die Aktionen im Warenkorb
 cartItemsList.addEventListener('click', (e) => {
     const quantityBtn = e.target.closest('.cart-quantity-btn');
     const removeBtn = e.target.closest('.cart-remove-btn');
@@ -1111,27 +1026,17 @@ cartItemsList.addEventListener('click', (e) => {
 
     if (removeBtn) {
         const id = removeBtn.dataset.id;
-
-        // Artikel komplett aus dem Warenkorb entfernen
         delete cart[id];
-
-        // Menge im Hauptmenü auf 0 zurücksetzen
         const allItemInstances = document.querySelectorAll(`.menu-item[data-id="${id}"]`);
         allItemInstances.forEach(instance => {
             const quantityDisplay = instance.querySelector('.quantity');
-            if (quantityDisplay) {
-                quantityDisplay.textContent = 0;
-            }
+            if (quantityDisplay) quantityDisplay.textContent = 0;
         });
-
-        // Warenkorb neu rendern
         renderCart();
     }
 });
 
-if (userSearchBtn) {
-    userSearchBtn.addEventListener('click', handleUserSearch);
-}
+if (userSearchBtn) userSearchBtn.addEventListener('click', handleUserSearch);
 
 if (userSearchResultsContainer) {
     userSearchResultsContainer.addEventListener('click', e => {
@@ -1145,17 +1050,15 @@ if (userSearchResultsContainer) {
 
 const resetOrder = () => {
     cart = {};
-    setupDaySelector(); 
+    setupDaySelector();
     customHourSelect.setAttribute('data-value', '');
     customHourSelect.querySelector('span').textContent = '--';
     populateMinutes();
     customMinuteSelect.setAttribute('data-value', '');
     customMinuteSelect.querySelector('span').textContent = '--';
-
     document.querySelector('.pickup-day-picker').style.display = 'block';
     document.querySelector('.pickup-time-picker').style.display = 'block';
     document.getElementById('profile-completion-notice').style.display = 'none';
-
     document.querySelectorAll('.menu-item .quantity').forEach(q => {
         q.textContent = '0';
     });
@@ -1165,11 +1068,8 @@ const resetOrder = () => {
 archivedOrdersListContainer.addEventListener('click', async (e) => {
     const target = e.target.closest('.reorder-btn');
     if (!target) return;
-
     const orderId = target.dataset.id;
-    if (orderId) {
-        handleReorder(orderId);
-    }
+    if (orderId) handleReorder(orderId);
 });
 
 let userOrdersListener = null;
@@ -1177,12 +1077,8 @@ let userOrdersListener = null;
 const renderUserOrders = (day) => {
     const user = auth.currentUser;
     if (!user || !day) return;
-
     userOrdersListContainer.innerHTML = "<p>Lade Bestellungen...</p>";
-
-    if (userOrdersListener) {
-        userOrdersListener(); 
-    }
+    if (userOrdersListener) userOrdersListener();
 
     const q = query(
         collection(db, "orders"),
@@ -1194,27 +1090,24 @@ const renderUserOrders = (day) => {
     userOrdersListener = onSnapshot(q, (querySnapshot) => {
         const orders = [];
         querySnapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
-
-       orders.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+        orders.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
         if (orders.length === 0) {
             userOrdersListContainer.innerHTML = `<p>Du hast für ${day} keine offenen Bestellungen.</p>`;
             return;
         }
 
-        userOrdersListContainer.innerHTML = ""; 
+        userOrdersListContainer.innerHTML = "";
         orders.forEach(order => {
             const orderId = order.id;
             const orderDate = order.timestamp.toDate();
             const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
-
             const itemsHtml = Object.values(order.items).map(item =>
                 `<li><span>${item.quantity}x ${item.name}</span> <span>${(item.price * item.quantity).toFixed(2).replace('.', ',')} €</span></li>`
             ).join('');
 
             const orderCard = document.createElement('div');
             orderCard.className = 'order-card';
-            
             if (order.isPaid) orderCard.classList.add('paid');
             if (order.isPrepared) orderCard.classList.add('prepared');
 
@@ -1229,33 +1122,26 @@ const renderUserOrders = (day) => {
                         <strong>${order.pickupTime} Uhr</strong>
                     </div>
                 </div>
-                <div class="order-items-container">
-                     <ul class="order-items-list">${itemsHtml}</ul>
-                </div>
+                <div class="order-items-container"><ul class="order-items-list">${itemsHtml}</ul></div>
                 <div class="order-footer">
-                    <div class="order-total">
-                        Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €
-                    </div>
+                    <div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div>
                     <button class="received-order-btn" data-id="${orderId}">Bestellung erhalten</button>
                 </div>
             `;
-            
+
             const headerInfo = orderCard.querySelector('.order-header-info');
-            
             if (order.isPaid) {
                 const paymentStatusBadge = document.createElement('span');
                 paymentStatusBadge.className = 'payment-status-badge paid';
                 paymentStatusBadge.textContent = 'Bezahlt';
                 headerInfo.appendChild(paymentStatusBadge);
             }
-    
             if (order.isPrepared) {
                 const preparedStatusBadge = document.createElement('span');
                 preparedStatusBadge.className = 'payment-status-badge prepared';
                 preparedStatusBadge.textContent = 'Abholbereit';
                 headerInfo.appendChild(preparedStatusBadge);
             }
-
             userOrdersListContainer.appendChild(orderCard);
         });
     }, (error) => {
@@ -1269,16 +1155,14 @@ const renderManagementOrders = async (day) => {
     managementOrdersListContainer.innerHTML = "<p>Lade Bestellungen...</p>";
 
     const q = query(
-        collection(db, "orders"), 
-        where("adminCompleted", "==", false), 
+        collection(db, "orders"),
+        where("adminCompleted", "==", false),
         where("isReported", "==", false),
         where("pickupDay", "==", day)
     );
     const querySnapshot = await getDocs(q);
-
     const orders = [];
     querySnapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
-
     orders.sort((a, b) => a.pickupTime.localeCompare(b.pickupTime));
 
     if (orders.length === 0) {
@@ -1292,17 +1176,13 @@ const renderManagementOrders = async (day) => {
         const orderDate = order.timestamp.toDate();
         const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
         const fullName = [order.userFirstName, order.userLastName].filter(Boolean).join(' ') || order.userName;
-
-        const itemsHtml = Object.values(order.items).map(item => 
+        const itemsHtml = Object.values(order.items).map(item =>
             `<li><span>${item.quantity}x ${item.name}</span> <span>${(item.price * item.quantity).toFixed(2).replace('.', ',')} €</span></li>`
         ).join('');
 
         const orderCard = document.createElement('div');
         orderCard.className = `order-card ${order.isPrepared ? 'prepared' : ''}`;
-        
-        if (order.isPaid) {
-            orderCard.classList.add('paid');
-        }
+        if (order.isPaid) orderCard.classList.add('paid');
 
         orderCard.innerHTML = `
             <div class="order-header">
@@ -1312,7 +1192,7 @@ const renderManagementOrders = async (day) => {
                 </div>
                 <div class="order-user-info">
                     <span>Bestellt von:</span>
-                    <strong>${fullName}</strong> 
+                    <strong>${fullName}</strong>
                 </div>
                 <div class="order-pickup-time">
                     <span>Abholung um:</span>
@@ -1325,17 +1205,13 @@ const renderManagementOrders = async (day) => {
                  <ul class="order-items-list">${itemsHtml}</ul>
             </div>
             <div class="order-footer">
-                 <div class="order-total">
-                    Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €
-                </div>
+                 <div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div>
                 <div class="order-actions">
                     <button class="report-order-btn danger-button" data-id="${orderId}">Melden</button>
                     <button class="prepare-order-btn" data-id="${orderId}" ${order.isPrepared ? 'disabled' : ''}>
                         ${order.isPrepared ? 'Vorbereitet' : 'Vorbereiten'}
                     </button>
-                    <button class="finish-order-btn" data-id="${orderId}">
-                        <i class="fa-solid fa-check"></i> Fertig
-                    </button>
+                    <button class="finish-order-btn" data-id="${orderId}"><i class="fa-solid fa-check"></i> Fertig</button>
                 </div>
             </div>
         `;
@@ -1347,7 +1223,6 @@ const renderManagementOrders = async (day) => {
             paymentStatusBadge.textContent = 'Bezahlt';
             headerInfo.appendChild(paymentStatusBadge);
         }
-
         managementOrdersListContainer.appendChild(orderCard);
     });
 };
@@ -1378,7 +1253,6 @@ const renderAdminStats = async () => {
         );
         const todayOrdersSnapshot = await getDocs(todayOrdersQuery);
         statsTodayOrdersCount.textContent = todayOrdersSnapshot.size;
-
     } catch (error) {
         console.error("Fehler beim Laden der Admin-Statistiken:", error);
         statsUserCount.textContent = "Fehler";
@@ -1391,7 +1265,7 @@ const renderReportedOrders = async () => {
     reportedOrdersListContainer.innerHTML = "<p>Lade gemeldete Bestellungen...</p>";
 
     const q = query(
-        collection(db, "orders"), 
+        collection(db, "orders"),
         where("isReported", "==", true),
         orderBy("timestamp", "desc")
     );
@@ -1409,7 +1283,6 @@ const renderReportedOrders = async () => {
         const orderDate = order.timestamp.toDate();
         const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
         const fullName = [order.userFirstName, order.userLastName].filter(Boolean).join(' ') || order.userName;
-
         const compactItem = document.createElement('div');
         compactItem.className = 'reported-order-item-compact';
         compactItem.dataset.id = orderId;
@@ -1418,9 +1291,7 @@ const renderReportedOrders = async () => {
                 <strong>Bestellnr: ${order.orderNumber}</strong>
                 <span>Von: ${fullName}</span>
             </div>
-            <div class="reported-order-date">
-                <span>${formattedDate}</span>
-            </div>
+            <div class="reported-order-date"><span>${formattedDate}</span></div>
         `;
         reportedOrdersListContainer.appendChild(compactItem);
     }
@@ -1429,7 +1300,6 @@ const renderReportedOrders = async () => {
 const openReportedOrderDetailModal = async (orderId) => {
     const orderRef = doc(db, "orders", orderId);
     const orderSnap = await getDoc(orderRef);
-
     if (!orderSnap.exists()) {
         showNotification("Bestellung nicht gefunden.", "error");
         return;
@@ -1440,11 +1310,10 @@ const openReportedOrderDetailModal = async (orderId) => {
     const userData = userDocSnap.exists() ? userDocSnap.data() : null;
     const orderDate = order.timestamp.toDate();
     const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
-
-    const itemsHtml = Object.values(order.items).map(item => 
+    const itemsHtml = Object.values(order.items).map(item =>
         `<li><span>${item.quantity}x ${item.name}</span> <span>${(item.price * item.quantity).toFixed(2).replace('.', ',')} €</span></li>`
     ).join('');
-    
+
     reportedOrderDetailContent.innerHTML = `
         <div class="order-header">
             <div class="order-header-info">
@@ -1456,14 +1325,8 @@ const openReportedOrderDetailModal = async (orderId) => {
                 <strong>${order.pickupTime} Uhr</strong>
             </div>
         </div>
-        <div class="order-items-container">
-             <ul class="order-items-list">${itemsHtml}</ul>
-        </div>
-        <div class="order-footer">
-            <div class="order-total">
-                Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €
-            </div>
-        </div>
+        <div class="order-items-container"><ul class="order-items-list">${itemsHtml}</ul></div>
+        <div class="order-footer"><div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div></div>
         ${userData ? `
         <div class="reported-user-details">
             <h4>Nutzerinformationen</h4>
@@ -1484,7 +1347,6 @@ const openReportedOrderDetailModal = async (orderId) => {
 const renderArchivedOrders = async () => {
     const user = auth.currentUser;
     if (!user) return;
-
     archivedOrdersListContainer.innerHTML = "<p>Lade archivierte Bestellungen...</p>";
 
     const sevenDaysAgo = new Date();
@@ -1512,10 +1374,7 @@ const renderArchivedOrders = async () => {
     orders.forEach(order => {
         const orderDate = order.timestamp.toDate();
         const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
-
-        const itemsHtml = Object.values(order.items).map(item =>
-            `<li><span>${item.quantity}x ${item.name}</span></li>`
-        ).join('');
+        const itemsHtml = Object.values(order.items).map(item => `<li><span>${item.quantity}x ${item.name}</span></li>`).join('');
 
         const orderCard = document.createElement('div');
         orderCard.className = 'order-card archived';
@@ -1530,16 +1389,10 @@ const renderArchivedOrders = async () => {
                     <strong>${order.pickupTime} Uhr</strong>
                 </div>
             </div>
-            <div class="order-items-container">
-                 <ul class="order-items-list">${itemsHtml}</ul>
-            </div>
+            <div class="order-items-container"><ul class="order-items-list">${itemsHtml}</ul></div>
             <div class="order-footer">
-                <div class="order-total">
-                    Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €
-                </div>
-                <div class="order-actions">
-                    <button class="reorder-btn cta-button" data-id="${order.id}">Erneut bestellen</button>
-                </div>
+                <div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div>
+                <div class="order-actions"><button class="reorder-btn cta-button" data-id="${order.id}">Erneut bestellen</button></div>
             </div>
         `;
         archivedOrdersListContainer.appendChild(orderCard);
@@ -1554,23 +1407,11 @@ async function handleReorder(orderId) {
             showNotification("Die ursprüngliche Bestellung konnte nicht gefunden werden.", "error");
             return;
         }
-
         const orderData = orderSnap.data();
-        
-        cart = {}; 
-        
         cart = orderData.items;
-
         showNotification("Die Artikel wurden in deinen Warenkorb gelegt!", "success");
-        
         showOrderPage();
-        
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-
-
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
         console.error("Fehler beim erneuten Bestellen: ", error);
         showNotification("Ein Fehler ist aufgetreten. Die Artikel konnten nicht in den Warenkorb gelegt werden.", "error");
@@ -1585,13 +1426,11 @@ onAuthStateChanged(auth, async (user) => {
     if (user && user.emailVerified) {
         authButton.textContent = 'Abmelden';
         authButton.onclick = () => signOut(auth);
-
         userProfileLink.textContent = user.displayName || "Profil";
         userProfileLink.style.display = 'block';
         userOrdersLink.style.display = 'block';
 
         const userDocRef = doc(db, "users", user.uid);
-
         onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 currentUserProfile = docSnap.data();
@@ -1600,38 +1439,23 @@ onAuthStateChanged(auth, async (user) => {
                     profileBalance.textContent = `${balance.toFixed(2).replace('.', ',')} €`;
                 }
                 userProfileLink.textContent = user.displayName || "Profil";
-                if (currentUserProfile.isCoAdmin === true || currentUserProfile.isAdmin === true) {
-                    managementOrdersLink.style.display = 'block';
-                } else {
-                    managementOrdersLink.style.display = 'none';
-                }
-                if (currentUserProfile.isAdmin === true) {
-                    adminToolsLink.style.display = 'block';
-                } else {
-                    adminToolsLink.style.display = 'none';
-                }
+                managementOrdersLink.style.display = (currentUserProfile.isCoAdmin || currentUserProfile.isAdmin) ? 'block' : 'none';
+                adminToolsLink.style.display = currentUserProfile.isAdmin ? 'block' : 'none';
             }
         });
-        
-        await checkForTopUpSuccess(); 
 
+        await checkForTopUpSuccess();
         const userDocSnap = await getDoc(userDocRef);
-
         if (userDocSnap.exists()) {
             currentUserProfile = userDocSnap.data();
-            if (currentUserProfile.isCoAdmin === true || currentUserProfile.isAdmin === true) {
-                managementOrdersLink.style.display = 'block';
-            }
-            if (currentUserProfile.isAdmin === true) {
-                adminToolsLink.style.display = 'block';
-            }
+            managementOrdersLink.style.display = (currentUserProfile.isCoAdmin || currentUserProfile.isAdmin) ? 'block' : 'none';
+            adminToolsLink.style.display = currentUserProfile.isAdmin ? 'block' : 'none';
         }
     } else {
         const wasJustLoggedOut = authButton.textContent === 'Abmelden';
         if (wasJustLoggedOut) {
             showNotification("Du wurdest erfolgreich abgemeldet.", "success");
         }
-        
         currentUserProfile = null;
         authButton.textContent = 'Anmelden';
         authButton.onclick = openModal;
@@ -1653,8 +1477,8 @@ async function handleTopUpBalance() {
 
     const amount = parseFloat(topupAmountInput.value);
     const currentBalance = currentUserProfile.balance || 0;
-
     topupErrorMessage.style.display = 'none';
+
     if (isNaN(amount) || amount < 5) {
         topupErrorMessage.textContent = "Bitte gib einen Betrag von mindestens 5,00 € ein.";
         topupErrorMessage.style.display = 'block';
@@ -1679,16 +1503,12 @@ async function handleTopUpBalance() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount, userId: user.uid })
         });
-
         if (!response.ok) {
             const { error } = await response.json();
             throw new Error(error || 'Fehler bei der Kommunikation mit dem Server.');
         }
-
         const session = await response.json();
-        
         const result = await stripe.redirectToCheckout({ sessionId: session.id });
-
         if (result.error) {
             showNotification(result.error.message, "error");
         }
@@ -1703,7 +1523,6 @@ async function handleTopUpBalance() {
 registerUsernameInput.addEventListener('input', () => {
     const username = registerUsernameInput.value.trim().toLowerCase();
     const isForbidden = forbiddenUsernameFragments.some(fragment => username.includes(fragment));
-
     const isLengthValid = validateInput(registerUsernameInput, usernameErrorMessage, 'Der Benutzername');
 
     if (isForbidden && username.length > 0) {
@@ -1715,13 +1534,11 @@ registerUsernameInput.addEventListener('input', () => {
         usernameErrorMessage.style.display = 'none';
         registerUsernameInput.classList.remove('invalid');
     }
-    
+
     const pass = registerPasswordInput.value;
     const hasLength = pass.length >= 8;
     const hasUppercase = /[A-Z]/.test(pass);
     const hasNumber = /[0-9]/.test(pass);
-    
-    // GEÄNDERT: Die Prüfung 'agbCheckbox.checked' wurde hinzugefügt
     registerBtn.disabled = !(hasLength && hasUppercase && hasNumber && isLengthValid && !isForbidden && agbCheckbox.checked);
 });
 
@@ -1752,14 +1569,13 @@ registerPasswordInput.addEventListener('input', () => {
     numberCheck.classList.toggle('valid', hasNumber);
 
     const isUsernameInvalid = registerUsernameInput.classList.contains('invalid');
-    
-    // GEÄNDERT: Die Prüfung 'agbCheckbox.checked' wurde hinzugefügt
     registerBtn.disabled = !(hasLength && hasUppercase && hasNumber && agbCheckbox.checked) || isUsernameInvalid;
 });
+
 agbCheckbox.addEventListener('change', () => {
-    // Simuliere ein 'input'-Event auf dem Passwortfeld, um die Button-Logik neu auszulösen
-    registerPasswordInput.dispatchEvent(new Event('input')); 
+    registerPasswordInput.dispatchEvent(new Event('input'));
 });
+
 const handleLoginOnEnter = (event) => { if (event.key === 'Enter') { event.preventDefault(); loginBtn.click(); } };
 loginEmailInput.addEventListener('keydown', handleLoginOnEnter);
 loginPasswordInput.addEventListener('keydown', handleLoginOnEnter);
@@ -1777,7 +1593,7 @@ reauthPasswordInput.addEventListener('keydown', handleConfirmDeleteOnEnter);
 
 document.getElementById('toggle-login-password').addEventListener('click', (e) => togglePasswordVisibility(loginPasswordInput, e.target));
 document.getElementById('toggle-register-password').addEventListener('click', (e) => togglePasswordVisibility(registerPasswordInput, e.target));
-document.getElementById('toggle-reauth-password').addEventListener('click', (e) => togglePasswordVisibility(reauthPasswordInput, e.target)); 
+document.getElementById('toggle-reauth-password').addEventListener('click', (e) => togglePasswordVisibility(reauthPasswordInput, e.target));
 
 closeModalButton.addEventListener('click', closeModal);
 window.addEventListener('click', (event) => { if (event.target === authModal) closeModal(); });
@@ -1792,14 +1608,14 @@ adminAreaLink.addEventListener('click', (e) => { e.preventDefault(); showAdminAr
 adminToolsLink.addEventListener('click', (e) => { e.preventDefault(); showAdminToolsPage(); });
 
 discardProfileBtn.addEventListener('click', async () => {
-    await showProfilePage(); 
+    await showProfilePage();
     showNotification("Änderungen verworfen.", "success");
 });
 
 showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(registerView); });
-showLoginLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(showLogin); });
-showPasswordResetLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(passwordResetView); }); 
-backToLoginLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(loginView); }); 
+showLoginLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(loginView); });
+showPasswordResetLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(passwordResetView); });
+backToLoginLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(loginView); });
 
 registerBtn.addEventListener('click', async () => {
     const username = registerUsernameInput.value.trim();
@@ -1811,52 +1627,40 @@ registerBtn.addEventListener('click', async () => {
         return;
     }
 
-    setButtonLoading(registerBtn, true); 
+    setButtonLoading(registerBtn, true);
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        
         await updateProfile(user, { displayName: username });
-        
         await setDoc(doc(db, "users", user.uid), {
             username: username, email: email, createdAt: new Date(),
             firstName: "", lastName: "", usernameChangesThisMonth: 0,
-            usernameLastChangeMonth: "none", 
-            firstNameChangeCount: 0,
-            lastNameChangeCount: 0,
-            isCoAdmin: false, isAdmin: false, isBlocked: false,
-            isVerified: false,
-            balance: 0,
-            favorites: []
+            usernameLastChangeMonth: "none", firstNameChangeCount: 0,
+            lastNameChangeCount: 0, isCoAdmin: false, isAdmin: false,
+            isBlocked: false, isVerified: false, balance: 0, favorites: []
         });
 
         await sendEmailVerification(user);
-        
         document.getElementById('verification-email-display').textContent = email;
         switchModalView(verificationMessage);
 
         const resendBtn = document.getElementById('resend-verification-btn');
-        
         const newResendBtn = resendBtn.cloneNode(true);
         resendBtn.parentNode.replaceChild(newResendBtn, resendBtn);
-
         startResendCooldown(newResendBtn, 60);
 
         newResendBtn.addEventListener('click', async () => {
-            if (!newResendBtn.disabled) {
+            if (!newResendBtn.disabled && auth.currentUser) {
                 try {
-                    if (auth.currentUser) {
-                        await sendEmailVerification(auth.currentUser);
-                        showNotification("Verifizierungs-E-Mail erneut gesendet.", "success");
-                        startResendCooldown(newResendBtn, 60);
-                    }
+                    await sendEmailVerification(auth.currentUser);
+                    showNotification("Verifizierungs-E-Mail erneut gesendet.", "success");
+                    startResendCooldown(newResendBtn, 60);
                 } catch (error) {
                     showNotification("Fehler beim Senden der E-Mail.", "error");
                 }
             }
         });
-
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
             showNotification('Diese E-Mail-Adresse wird bereits verwendet.');
@@ -1864,7 +1668,7 @@ registerBtn.addEventListener('click', async () => {
             showNotification('Fehler bei der Registrierung: ' + error.message);
         }
     } finally {
-        setButtonLoading(registerBtn, false); 
+        setButtonLoading(registerBtn, false);
     }
 });
 
@@ -1877,7 +1681,7 @@ loginBtn.addEventListener('click', async () => {
         return;
     }
 
-    setButtonLoading(loginBtn, true); 
+    setButtonLoading(loginBtn, true);
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -1889,13 +1693,13 @@ loginBtn.addEventListener('click', async () => {
             signOut(auth);
         }
     } catch (error) {
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-             showNotification('E-Mail oder Passwort ist falsch.');
+        if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(error.code)) {
+            showNotification('E-Mail oder Passwort ist falsch.');
         } else {
-             showNotification('Fehler bei der Anmeldung: ' + error.message);
+            showNotification('Fehler bei der Anmeldung: ' + error.message);
         }
     } finally {
-        setButtonLoading(loginBtn, false); 
+        setButtonLoading(loginBtn, false);
     }
 });
 
@@ -1916,35 +1720,23 @@ googleSignInBtn.addEventListener('click', async () => {
                     showNotification("Bitte gib einen Benutzernamen ein.");
                     return;
                 }
-
                 try {
                     await updateProfile(user, { displayName: username });
                     await setDoc(doc(db, "users", user.uid), {
-                        username: username,
-                        email: user.email,
-                        createdAt: new Date(),
+                        username: username, email: user.email, createdAt: new Date(),
                         firstName: result.user.displayName.split(' ')[0] || "",
                         lastName: result.user.displayName.split(' ').slice(1).join(' ') || "",
-                        usernameChangesThisMonth: 0,
-                        usernameLastChangeMonth: "none", 
-                        firstNameChangeCount: 0,
-                        lastNameChangeCount: 0,
-                        isCoAdmin: false,
-                        isAdmin: false,
-                        isBlocked: false,
-                        isVerified: false,
-                        balance: 0,
-                        favorites: []
+                        usernameChangesThisMonth: 0, usernameLastChangeMonth: "none",
+                        firstNameChangeCount: 0, lastNameChangeCount: 0,
+                        isCoAdmin: false, isAdmin: false, isBlocked: false,
+                        isVerified: false, balance: 0, favorites: []
                     });
-
                     closeModal();
                     showNotification(`Willkommen, ${username}! Dein Konto wurde erstellt.`, 'success');
-
                 } catch (error) {
                     showNotification('Fehler beim Speichern des Benutzernamens: ' + error.message);
                 }
             }, { once: true });
-
         } else {
             closeModal();
             showNotification(`Willkommen zurück, ${user.displayName}!`, 'success');
@@ -1968,12 +1760,10 @@ sendResetEmailBtn.addEventListener('click', async () => {
         showNotification("Bitte gib deine E-Mail-Adresse ein.", "error");
         return;
     }
-
-    setButtonLoading(sendResetEmailBtn, true); 
+    setButtonLoading(sendResetEmailBtn, true);
 
     try {
         await sendPasswordResetEmail(auth, email);
-        
         passwordResetInitialView.style.display = 'none';
         passwordResetSentView.style.display = 'block';
         document.getElementById('reset-email-display').textContent = email;
@@ -1981,7 +1771,6 @@ sendResetEmailBtn.addEventListener('click', async () => {
         const resendBtn = document.getElementById('resend-reset-email-btn');
         const newResendBtn = resendBtn.cloneNode(true);
         resendBtn.parentNode.replaceChild(newResendBtn, resendBtn);
-
         startResendCooldown(newResendBtn, 60);
 
         newResendBtn.addEventListener('click', async () => {
@@ -1998,7 +1787,7 @@ sendResetEmailBtn.addEventListener('click', async () => {
     } catch (error) {
         showNotification("Fehler: " + error.message, "error");
     } finally {
-        setButtonLoading(sendResetEmailBtn, false); 
+        setButtonLoading(sendResetEmailBtn, false);
     }
 });
 
@@ -2006,19 +1795,15 @@ resetPasswordBtn.addEventListener('click', () => {
     const user = auth.currentUser;
     if (user) {
         sendPasswordResetEmail(auth, user.email)
-            .then(() => {
-                showNotification("E-Mail zum Zurücksetzen wurde an dein Postfach gesendet.", "success");
-            })
-            .catch((error) => {
-                showNotification("Fehler: " + error.message);
-            });
+            .then(() => showNotification("E-Mail zum Zurücksetzen wurde an dein Postfach gesendet.", "success"))
+            .catch((error) => showNotification("Fehler: " + error.message));
     }
 });
 
 saveProfileBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
     if (!user) return;
-    
+
     const isUsernameValid = validateInput(profileUsername, usernameProfileError, 'Der Benutzername');
     const isFirstnameValid = validateInput(profileFirstname, firstnameProfileError, 'Der Vorname');
     const isLastnameValid = validateInput(profileLastname, lastnameProfileError, 'Der Nachname');
@@ -2029,7 +1814,7 @@ saveProfileBtn.addEventListener('click', async () => {
     }
 
     const userDocRef = doc(db, "users", user.uid);
-    setButtonLoading(saveProfileBtn, true); 
+    setButtonLoading(saveProfileBtn, true);
 
     try {
         const userDocSnap = await getDoc(userDocRef);
@@ -2044,11 +1829,10 @@ saveProfileBtn.addEventListener('click', async () => {
         const newLastName = profileLastname.value.trim();
         const updates = {};
         let errorOccurred = false;
-        
+
         if (newUsername !== user.displayName) {
             const currentMonth = new Date().toISOString().slice(0, 7);
             const changesThisMonth = data.usernameLastChangeMonth === currentMonth ? data.usernameChangesThisMonth : 0;
-            
             if (changesThisMonth < 2) {
                 await updateProfile(user, { displayName: newUsername });
                 updates.username = newUsername;
@@ -2084,45 +1868,35 @@ saveProfileBtn.addEventListener('click', async () => {
                 errorOccurred = true;
             }
         }
-        
+
         if (errorOccurred) {
-            setButtonLoading(saveProfileBtn, false); 
+            setButtonLoading(saveProfileBtn, false);
             return;
         }
 
         if (Object.keys(updates).length > 0) {
             await updateDoc(userDocRef, updates);
-            
             const updatedDoc = await getDoc(userDocRef);
-            if (updatedDoc.exists()) {
-                currentUserProfile = updatedDoc.data();
-            }
-
+            if (updatedDoc.exists()) currentUserProfile = updatedDoc.data();
             showNotification("Dein Profil wurde erfolgreich aktualisiert!", "success");
             userProfileLink.textContent = user.displayName;
         } else {
             showNotification("Es wurden keine Änderungen vorgenommen.", "success");
         }
-        
         await showProfilePage();
-
     } catch (error) {
         console.error("Fehler beim Aktualisieren des Profils:", error);
         showNotification("Ein Fehler ist aufgetreten: " + error.message, "error");
         await showProfilePage();
     } finally {
-        setButtonLoading(saveProfileBtn, false); 
+        setButtonLoading(saveProfileBtn, false);
     }
 });
 
-
-deleteAccountBtn.addEventListener('click', () => {
-    reauthDeleteModal.style.display = 'flex';
-});
-
+deleteAccountBtn.addEventListener('click', () => { reauthDeleteModal.style.display = 'flex'; });
 closeReauthButton.addEventListener('click', () => {
     reauthDeleteModal.style.display = 'none';
-    reauthPasswordInput.value = ''; 
+    reauthPasswordInput.value = '';
 });
 
 confirmDeleteBtn.addEventListener('click', async () => {
@@ -2133,25 +1907,18 @@ confirmDeleteBtn.addEventListener('click', async () => {
         showNotification("Bitte gib dein Passwort ein.", "error");
         return;
     }
-
-    setButtonLoading(confirmDeleteBtn, true); 
+    setButtonLoading(confirmDeleteBtn, true);
     const credential = EmailAuthProvider.credential(user.email, password);
     const userDocRef = doc(db, "users", user.uid);
 
     try {
         await reauthenticateWithCredential(user, credential);
-
         try {
             const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
             const querySnapshot = await getDocs(ordersQuery);
-            
             const deletePromises = [];
-            querySnapshot.forEach((doc) => {
-                deletePromises.push(deleteDoc(doc.ref));
-            });
-            
+            querySnapshot.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
             await Promise.all(deletePromises);
-
         } catch (orderError) {
             console.error("Fehler beim Löschen der Bestellungen:", orderError);
             showNotification("Die Bestellungen konnten nicht gelöscht werden. Das Konto wird nicht gelöscht.", "error");
@@ -2163,16 +1930,14 @@ confirmDeleteBtn.addEventListener('click', async () => {
         } catch (dbError) {
             console.error("Fehler beim Löschen des Firestore-Dokuments:", dbError);
             showNotification("Konto konnte nicht vollständig gelöscht werden (DB-Fehler). Bitte kontaktiere den Support.", "error");
-            return; 
+            return;
         }
-        
-        await deleteUser(user);
 
+        await deleteUser(user);
         reauthDeleteModal.style.display = 'none';
         showNotification("Dein Konto und alle zugehörigen Bestellungen wurden endgültig gelöscht.", "success");
-
     } catch (authError) {
-        if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+        if (['auth/wrong-password', 'auth/invalid-credential'].includes(authError.code)) {
             showNotification("Das eingegebene Passwort ist falsch.", "error");
         } else {
             console.error("Fehler bei Authentifizierung oder dem Löschen des Kontos:", authError);
@@ -2180,20 +1945,17 @@ confirmDeleteBtn.addEventListener('click', async () => {
         }
     } finally {
         reauthPasswordInput.value = '';
-        setButtonLoading(confirmDeleteBtn, false); 
+        setButtonLoading(confirmDeleteBtn, false);
     }
 });
 
 customHourSelect.addEventListener('change', () => {
     const selectedHour = customHourSelect.getAttribute('data-value');
-
-    // NEU: Prüfen, ob eine deaktivierte Option umgangen wurde (sollte nicht passieren, aber sicher ist sicher)
     const selectedOption = customHourSelect.querySelector(`.custom-option[data-value="${selectedHour}"]`);
     if (selectedOption && selectedOption.classList.contains('disabled')) {
         customHourSelect.setAttribute('data-value', '');
         customHourSelect.querySelector('span').textContent = '--';
     }
-
     populateMinutes(selectedHour === '14');
     customMinuteSelect.setAttribute('data-value', '');
     customMinuteSelect.querySelector('span').textContent = '--';
@@ -2206,33 +1968,22 @@ const setButtonLoading = (button, isLoading) => {
     if (!button) return;
     const btnText = button.querySelector('.btn-text');
     const btnSpinner = button.querySelector('.btn-spinner');
-
-    if (isLoading) {
-        button.disabled = true;
-        if (btnText) btnText.style.display = 'none';
-        if (btnSpinner) btnSpinner.style.display = 'inline-block';
-    } else {
-        button.disabled = false;
-        if (btnText) btnText.style.display = 'inline-block'; 
-        if (btnSpinner) btnSpinner.style.display = 'none';
-    }
+    button.disabled = isLoading;
+    if (btnText) btnText.style.display = isLoading ? 'none' : 'inline-block';
+    if (btnSpinner) btnSpinner.style.display = isLoading ? 'inline-block' : 'none';
 };
 
 function handleUserSearchOnInput() {
     clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(() => {
-        performUserSearch();
-    }, 300);
+    searchDebounceTimer = setTimeout(performUserSearch, 300);
 }
 
 async function performUserSearch() {
     const searchTerm = userSearchInput.value.trim();
-
     if (searchTerm.length === 0) {
         userSearchResultsContainer.innerHTML = '';
         return;
     }
-
     userSearchResultsContainer.innerHTML = '<p>Suche Nutzer...</p>';
 
     try {
@@ -2253,9 +2004,7 @@ async function performUserSearch() {
         const users = new Map();
         usernameSnapshot.forEach(doc => users.set(doc.id, { id: doc.id, ...doc.data() }));
         emailSnapshot.forEach(doc => users.set(doc.id, { id: doc.id, ...doc.data() }));
-
         renderUserSearchResults(Array.from(users.values()));
-
     } catch (error) {
         console.error("Fehler bei der Nutzersuche:", error);
         userSearchResultsContainer.innerHTML = '<p>Bei der Suche ist ein Fehler aufgetreten. Prüfen Sie die Browser-Konsole für Details.</p>';
@@ -2264,11 +2013,7 @@ async function performUserSearch() {
 
 function renderUserSearchResults(users) {
     if (users.length === 0) {
-        if (userSearchInput.value.trim().length > 0) {
-            userSearchResultsContainer.innerHTML = '<p>Keine Nutzer für diese Suche gefunden.</p>';
-        } else {
-            userSearchResultsContainer.innerHTML = '';
-        }
+        userSearchResultsContainer.innerHTML = userSearchInput.value.trim().length > 0 ? '<p>Keine Nutzer für diese Suche gefunden.</p>' : '';
         return;
     }
     userSearchResultsContainer.innerHTML = '';
@@ -2277,7 +2022,6 @@ function renderUserSearchResults(users) {
         const userCard = document.createElement('div');
         userCard.className = 'user-result-card';
         userCard.dataset.userId = user.id;
-
         userCard.innerHTML = `
             <div class="user-info">
                 <strong>${user.username}</strong>
@@ -2300,14 +2044,12 @@ function renderUserSearchResults(users) {
 async function openUserDetailModal(userId) {
     const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
-
     if (!userSnap.exists()) {
         showNotification("Nutzer nicht gefunden.", "error");
         return;
     }
     const user = userSnap.data();
     const modalContent = userDetailModal.querySelector('.modal-content');
-
     modalContent.innerHTML = `
         <span class="close-user-detail-modal close-button">&times;</span>
         <h2>Profil von ${user.username}</h2>
@@ -2319,19 +2061,12 @@ async function openUserDetailModal(userId) {
             <p><strong>Rolle:</strong> ${user.isAdmin ? 'Admin' : (user.isCoAdmin ? 'Co-Admin' : 'Nutzer')}</p>
         </div>
         <div class="modal-button-group">
-            <button class="toggle-block-btn danger-button" data-user-id="${userId}">
-                ${user.isBlocked ? 'Nutzer entsperren' : 'Nutzer sperren'}
-            </button>
-             <button class="toggle-coadmin-btn secondary-button" data-user-id="${userId}">
-                ${user.isCoAdmin ? 'Co-Admin entfernen' : 'Zum Co-Admin machen'}
-            </button>
+            <button class="toggle-block-btn danger-button" data-user-id="${userId}">${user.isBlocked ? 'Nutzer entsperren' : 'Nutzer sperren'}</button>
+            <button class="toggle-coadmin-btn secondary-button" data-user-id="${userId}">${user.isCoAdmin ? 'Co-Admin entfernen' : 'Zum Co-Admin machen'}</button>
         </div>
     `;
-
     userDetailModal.style.display = 'flex';
-
     const closeModal = () => userDetailModal.style.display = 'none';
-
     modalContent.querySelector('.close-user-detail-modal').addEventListener('click', closeModal);
 
     modalContent.querySelector('.toggle-block-btn').addEventListener('click', async (e) => {
@@ -2342,7 +2077,7 @@ async function openUserDetailModal(userId) {
         closeModal();
         await performUserSearch();
     });
-    
+
     modalContent.querySelector('.toggle-coadmin-btn').addEventListener('click', async (e) => {
         const uid = e.target.dataset.userId;
         const isCurrentlyCoAdmin = user.isCoAdmin;
@@ -2354,25 +2089,21 @@ async function openUserDetailModal(userId) {
 }
 
 checkoutBtn.addEventListener('click', () => {
-    resetCheckoutModalState(); 
+    resetCheckoutModalState();
     const hour = customHourSelect.getAttribute('data-value');
     const minute = customMinuteSelect.getAttribute('data-value');
     checkoutPickupDay.textContent = selectedPickupDay || '--';
     checkoutPickupTime.textContent = hour && minute ? `${hour}:${minute}` : '--:--';
-    checkoutModal.style.display = 'flex';
-
     const totalPrice = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
     const currentBalance = currentUserProfile?.balance || 0;
 
     if (currentBalance >= totalPrice) {
         payWithBalanceBtn.disabled = false;
         payWithBalanceBtn.querySelector('.btn-text').innerHTML = `Mit Guthaben bezahlen <br> <small>(${currentBalance.toFixed(2).replace('.', ',')} €)</small>`;
-        
     } else {
         payWithBalanceBtn.disabled = true;
         payWithBalanceBtn.querySelector('.btn-text').textContent = `Nicht genügend Guthaben`;
     }
-
     checkoutModal.style.display = 'flex';
 });
 
@@ -2394,7 +2125,6 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
     const target = e.target;
     const orderCard = target.closest('.order-card');
     if (!orderCard) return;
-
     const orderId = target.dataset.id;
     if (!orderId) return;
     const orderRef = doc(db, "orders", orderId);
@@ -2405,10 +2135,7 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
             await updateDoc(orderRef, { adminCompleted: true });
             orderCard.style.transition = 'opacity 0.3s ease';
             orderCard.style.opacity = '0';
-            setTimeout(() => {
-                orderCard.remove();
-                renderAdminStats();
-            }, 300);
+            setTimeout(() => { orderCard.remove(); renderAdminStats(); }, 300);
             showNotification("Bestellung als fertig markiert.", "success");
         } catch (error) {
             console.error("Fehler bei Admin-Aktion 'Fertig': ", error);
@@ -2423,10 +2150,7 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
             await updateDoc(orderRef, { isReported: true });
             orderCard.style.transition = 'opacity 0.3s ease';
             orderCard.style.opacity = '0';
-            setTimeout(() => {
-                orderCard.remove();
-                renderAdminStats();
-            }, 300);
+            setTimeout(() => { orderCard.remove(); renderAdminStats(); }, 300);
             showNotification("Bestellung wurde gemeldet und zur Überprüfung verschoben.", "success");
         } catch (error) {
             console.error("Fehler bei Admin-Aktion 'Melden': ", error);
@@ -2434,7 +2158,7 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
             target.disabled = false;
         }
     }
-    
+
     if (target.matches('.prepare-order-btn') && !target.disabled) {
         try {
             target.disabled = true;
@@ -2461,17 +2185,13 @@ userOrdersListContainer.addEventListener('click', async (e) => {
     try {
         target.disabled = true;
         await updateDoc(orderRef, { userAcknowledged: true });
-        
         orderCard.style.transition = 'opacity 0.3s ease';
         orderCard.style.opacity = '0';
-        setTimeout(() => {
-            orderCard.remove();
-            renderArchivedOrders();
-        }, 300);
+        setTimeout(() => { orderCard.remove(); renderArchivedOrders(); }, 300);
         showNotification("Bestellung als erhalten markiert.", "success");
 
         const updatedDoc = await getDoc(orderRef);
-        if (updatedDoc.exists() && updatedDoc.data().adminCompleted === true) {
+        if (updatedDoc.exists() && updatedDoc.data().adminCompleted) {
             await deleteDoc(orderRef);
         }
     } catch (error) {
@@ -2497,18 +2217,14 @@ reportedOrderDetailContent.addEventListener('click', async (e) => {
 
         try {
             e.target.disabled = true;
-            
             await Promise.all([
                 updateDoc(userRef, { isBlocked: true }),
                 deleteDoc(orderRef)
             ]);
-
             showNotification("Nutzer wurde gesperrt und die Bestellung wurde gelöscht.", "success");
-            
             reportedOrderDetailModal.style.display = 'none';
             renderReportedOrders();
             renderAdminStats();
-
         } catch (error) {
             console.error("Fehler beim Sperren des Nutzers & Löschen der Bestellung:", error);
             showNotification("Aktion fehlgeschlagen.", "error");
@@ -2535,8 +2251,7 @@ reportedOrderDetailContent.addEventListener('click', async (e) => {
 });
 
 deleteOldOrdersBtn.addEventListener('click', async () => {
-    const confirmation = window.confirm("Möchtest du wirklich alle Bestellungen, die älter als 7 Tage sind, endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.");
-    if (!confirmation) return;
+    if (!window.confirm("Möchtest du wirklich alle Bestellungen, die älter als 7 Tage sind, endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) return;
 
     deleteOldOrdersBtn.disabled = true;
     deleteOldOrdersBtn.textContent = "Lösche...";
@@ -2554,15 +2269,10 @@ deleteOldOrdersBtn.addEventListener('click', async () => {
         }
 
         const deletePromises = [];
-        querySnapshot.forEach((doc) => {
-            deletePromises.push(deleteDoc(doc.ref));
-        });
-        
+        querySnapshot.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
         await Promise.all(deletePromises);
-        
         showNotification(`${deletePromises.length} alte Bestellungen wurden erfolgreich gelöscht.`, "success");
         renderAdminStats();
-
     } catch (error) {
         console.error("Fehler beim Löschen alter Bestellungen:", error);
         showNotification("Ein Fehler ist beim Löschen aufgetreten.", "error");
@@ -2572,31 +2282,22 @@ deleteOldOrdersBtn.addEventListener('click', async () => {
     }
 });
 
-
-
 startOnlinePaymentBtn.addEventListener('click', async () => {
     setButtonLoading(startOnlinePaymentBtn, true);
-    
-    const isReady = await initializeCheckout(); 
-    
+    const isReady = await initializeCheckout();
     setButtonLoading(startOnlinePaymentBtn, false);
-
     if (isReady) {
         checkoutInitialView.style.display = 'none';
         paymentElementContainer.style.display = 'block';
     }
 });
+
 submitPaymentBtn.addEventListener('click', handleSubmit);
 backToPaymentOptionsBtn.addEventListener('click', resetCheckoutModalState);
 
 async function initializeCheckout() {
     document.getElementById('payment-request-button-container').style.display = 'none';
-    
-    const cartArray = Object.keys(cart).map(id => ({
-        id: id,
-        quantity: cart[id].quantity
-    }));
-
+    const cartArray = Object.keys(cart).map(id => ({ id, quantity: cart[id].quantity }));
     const totalPriceForDisplay = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     try {
@@ -2605,31 +2306,20 @@ async function initializeCheckout() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cart: cartArray }),
         });
-
         if (!response.ok) {
             const { error } = await response.json();
             throw new Error(error || `HTTP-Fehler! Status: ${response.status}`);
         }
-
         const { clientSecret } = await response.json();
         elements = stripe.elements({ clientSecret, locale: 'de' });
 
         const paymentRequest = stripe.paymentRequest({
-            country: 'DE',
-            currency: 'eur',
-            total: {
-                label: 'Gesamtbetrag',
-                amount: Math.round(totalPriceForDisplay * 100),
-            },
-            requestPayerName: true,
-            requestPayerEmail: true,
+            country: 'DE', currency: 'eur',
+            total: { label: 'Gesamtbetrag', amount: Math.round(totalPriceForDisplay * 100) },
+            requestPayerName: true, requestPayerEmail: true,
         });
 
-        const prButton = elements.create('paymentRequestButton', {
-            paymentRequest,
-        });
-
-        
+        const prButton = elements.create('paymentRequestButton', { paymentRequest });
         const canMakePayment = await paymentRequest.canMakePayment();
         if (canMakePayment) {
             prButton.mount('#payment-request-button-container');
@@ -2641,17 +2331,11 @@ async function initializeCheckout() {
         paymentRequest.on('paymentmethod', async (ev) => {
             const hour = customHourSelect.getAttribute('data-value');
             const minute = customMinuteSelect.getAttribute('data-value');
-            const orderDetails = {
-                cart: cart,
-                pickupDay: selectedPickupDay,
-                pickupTime: `${hour}:${minute}`
-            };
+            const orderDetails = { cart, pickupDay: selectedPickupDay, pickupTime: `${hour}:${minute}` };
             localStorage.setItem('pendingOrderDetails', JSON.stringify(orderDetails));
 
             const { paymentIntent, error: confirmError } = await stripe.confirmCardPayment(
-                clientSecret,
-                { payment_method: ev.paymentMethod.id },
-                { handleActions: false }
+                clientSecret, { payment_method: ev.paymentMethod.id }, { handleActions: false }
             );
 
             if (confirmError) {
@@ -2662,38 +2346,20 @@ async function initializeCheckout() {
                 ev.complete('success');
                 if (paymentIntent.status === "requires_action") {
                     const { error } = await stripe.confirmCardPayment(clientSecret);
-                    if (error) {
-                       showMessage("Zusätzliche Bestätigung fehlgeschlagen.");
-                    }
+                    if (error) showMessage("Zusätzliche Bestätigung fehlgeschlagen.");
                 }
             }
         });
 
         const paymentElement = elements.create("payment", { layout: "tabs" });
         paymentElement.mount("#payment-element");
-        
-        return true; 
-
+        return true;
     } catch (e) {
         console.error('Fehler beim Initialisieren des Checkouts:', e);
         showNotification(`Bezahlvorgang konnte nicht gestartet werden: ${e.message}`, 'error');
         resetCheckoutModalState();
-        return false; 
+        return false;
     }
-}
-
-function showCardPaymentForm() {
-    checkoutInitialView.style.display = 'none';
-    paymentElementContainer.style.display = 'block';
-}
-
-function resetPaymentButton() {
-    const btnText = startOnlinePaymentBtn.querySelector('.btn-text');
-    const btnSpinner = startOnlinePaymentBtn.querySelector('.btn-spinner'); 
-    
-    startOnlinePaymentBtn.disabled = false;
-    if (btnText) btnText.style.display = 'inline';
-    if (btnSpinner) btnSpinner.style.display = 'none';
 }
 
 async function handlePayWithBalance() {
@@ -2705,61 +2371,42 @@ async function handlePayWithBalance() {
     const hour = customHourSelect.getAttribute('data-value');
     const minute = customMinuteSelect.getAttribute('data-value');
     const pickupTime = isRestverkaufOrder ? "Sofort" : `${hour}:${minute}`;
-    
     const orderCart = { ...cart };
     if (orderCart.isRestverkauf) delete orderCart.isRestverkauf;
-
     setButtonLoading(payWithBalanceBtn, true);
 
     try {
         const userRef = doc(db, "users", user.uid);
-
         await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
             if (!userDoc.exists()) throw "Benutzerdokument nicht gefunden.";
-            
             const currentBalance = userDoc.data().balance || 0;
             if (currentBalance < totalPrice) throw "Nicht genügend Guthaben.";
-
             const newBalance = currentBalance - totalPrice;
             transaction.update(userRef, { balance: newBalance });
         });
-        
         await saveOrderToFirestore('Guthaben', orderCart, selectedPickupDay, pickupTime, isRestverkaufOrder);
-
     } catch (error) {
         console.error("Fehler bei der Guthaben-Zahlung: ", error);
         showNotification(`Zahlung fehlgeschlagen: ${error}`, "error");
         setButtonLoading(payWithBalanceBtn, false);
-    } 
+    }
 }
 
 async function createOrderObject(paymentMethod, orderCart, orderPickupDay, orderPickupTime) {
     const user = auth.currentUser;
     const totalPrice = Object.values(orderCart).reduce((sum, item) => sum + item.price * item.quantity, 0);
-    
     const userFirstName = currentUserProfile?.firstName || "";
     const userLastName = currentUserProfile?.lastName || "";
     const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
 
     return {
-        orderNumber,
-        userId: user.uid,
-        userName: user.displayName,
-        userFirstName,
-        userLastName, 
-        items: orderCart,
-        totalPrice,
-        pickupDay: orderPickupDay,
-        pickupTime: orderPickupTime,
-        timestamp: Timestamp.now(),
-        status: 'pending',
-        paymentMethod,
-        isPaid: paymentMethod !== 'Barzahlung',
-        adminCompleted: false,
-        userAcknowledged: false,
-        isReported: false,
-        isPrepared: false
+        orderNumber, userId: user.uid, userName: user.displayName,
+        userFirstName, userLastName, items: orderCart, totalPrice,
+        pickupDay: orderPickupDay, pickupTime: orderPickupTime,
+        timestamp: Timestamp.now(), status: 'pending', paymentMethod,
+        isPaid: paymentMethod !== 'Barzahlung', adminCompleted: false,
+        userAcknowledged: false, isReported: false, isPrepared: false
     };
 }
 
@@ -2775,18 +2422,12 @@ async function handleSubmit(e) {
         return;
     }
 
-    const orderDetails = {
-        cart: cart,
-        pickupDay: selectedPickupDay,
-        pickupTime: `${hour}:${minute}`
-    };
+    const orderDetails = { cart, pickupDay: selectedPickupDay, pickupTime: `${hour}:${minute}` };
     localStorage.setItem('pendingOrderDetails', JSON.stringify(orderDetails));
 
     const { error } = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-            return_url: window.location.origin + window.location.pathname,
-        },
+        confirmParams: { return_url: window.location.origin + window.location.pathname },
     });
 
     if (error.type === "card_error" || error.type === "validation_error") {
@@ -2794,14 +2435,12 @@ async function handleSubmit(e) {
     } else {
         showMessage("Ein unerwarteter Fehler ist aufgetreten.");
     }
-
     setLoading(false);
 }
 
 async function checkStatus() {
     const clientSecret = new URLSearchParams(window.location.search).get("payment_intent_client_secret");
     if (!clientSecret) return;
-
     window.history.replaceState({}, document.title, window.location.pathname);
 
     const user = await getAuthUserAfterRedirect();
@@ -2809,7 +2448,6 @@ async function checkStatus() {
         showNotification("Sitzung abgelaufen. Bitte melde dich erneut an, um die Bestellung zu sehen.", "error");
         return;
     }
-
     const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
 
     switch (paymentIntent.status) {
@@ -2820,14 +2458,11 @@ async function checkStatus() {
                 try {
                     const orderCart = { ...pendingOrder.cart };
                     if (orderCart.isRestverkauf) delete orderCart.isRestverkauf;
-                    
                     await saveOrderToFirestore('Online-Zahlung', orderCart, pendingOrder.pickupDay, pendingOrder.pickupTime, pendingOrder.cart.hasOwnProperty('isRestverkauf'));
-                    
                     localStorage.removeItem('pendingOrderDetails');
                     showNotification("Zahlung erfolgreich! Deine Bestellung wurde aufgegeben.", "success");
                     resetOrder();
                     showUserOrdersPage();
-
                 } catch (error) {
                     console.error("Fehler: Zahlung erfolgreich, aber Bestellung konnte nicht gespeichert werden:", error);
                     showNotification("Zahlung erfolgreich, aber die Bestellung konnte nicht gespeichert werden. Bitte kontaktiere den Support mit der Bestellzeit.", "error");
@@ -2836,23 +2471,18 @@ async function checkStatus() {
                 showNotification("Zahlung erfolgreich, aber die Bestelldaten konnten nicht gefunden werden. Bitte kontaktiere den Support.", "error");
             }
             break;
-
         case "processing":
-            showNotification("Deine Zahlung wird noch verarbeitet.", "success"); 
+            showNotification("Deine Zahlung wird noch verarbeitet.", "success");
             break;
-
         case "requires_payment_method":
             showNotification("Zahlung fehlgeschlagen. Deine Bestellung wurde nicht aufgegeben.", "error");
             checkoutBtn.click();
             break;
-
         default:
             showNotification("Ein Fehler ist aufgetreten. Die Bestellung konnte nicht abgeschlossen werden.", "error");
             break;
     }
 }
-
-
 
 async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, orderPickupTime, isRestverkauf = false) {
     const user = auth.currentUser;
@@ -2862,9 +2492,8 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
     }
 
     const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
+    const oneHourAgo = new Date(now.getTime() - 3600000);
     const oneHourAgoTimestamp = Timestamp.fromDate(oneHourAgo);
-
     const ordersLastHourQuery = query(
         collection(db, "orders"),
         where("userId", "==", user.uid),
@@ -2875,7 +2504,6 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
         const snapshot = await getDocs(ordersLastHourQuery);
         if (snapshot.size >= 5) {
             showNotification("Bestelllimit erreicht. Du kannst maximal 5 Bestellungen pro Stunde aufgeben.", "error");
-            
             setButtonLoading(submitPaymentBtn, false);
             setButtonLoading(payWithBalanceBtn, false);
             return;
@@ -2891,13 +2519,11 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
         return;
     }
 
-    
-    else if (paymentMethod === 'Guthaben') setButtonLoading(payWithBalanceBtn, true);
+    if (paymentMethod === 'Guthaben') setButtonLoading(payWithBalanceBtn, true);
     else setLoading(true);
 
     try {
         const orderData = await createOrderObject(paymentMethod, orderCart, orderPickupDay, orderPickupTime);
-        
         if (isRestverkauf) {
             await runTransaction(db, async (transaction) => {
                 for (const itemId in orderCart) {
@@ -2917,24 +2543,20 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
         }
 
         checkoutModal.style.display = 'none';
-        
         if (paymentMethod !== 'Online-Zahlung') {
             showNotification("Bestellung wurde erfolgreich abgeschickt!", "success");
             resetOrder();
             if (isRestverkauf) checkAndDisplayRestverkauf();
             showUserOrdersPage();
         }
-
     } catch (error) {
         console.error("Fehler beim Senden der Bestellung: ", error);
         showNotification(`Ein Fehler ist aufgetreten: ${error.message}`, "error");
     } finally {
-        
         setButtonLoading(payWithBalanceBtn, false);
         setLoading(false);
     }
 }
-
 
 function showMessage(messageText) {
     paymentMessage.textContent = messageText;
@@ -2942,34 +2564,21 @@ function showMessage(messageText) {
 }
 
 function setLoading(isLoading) {
-    if (isLoading) {
-        submitPaymentBtn.disabled = true;
-        document.getElementById('spinner').style.display = 'inline';
-        document.getElementById('button-text').style.display = 'none';
-    } else {
-        submitPaymentBtn.disabled = false;
-        document.getElementById('spinner').style.display = 'none';
-        document.getElementById('button-text').style.display = 'inline';
-    }
+    submitPaymentBtn.disabled = isLoading;
+    document.getElementById('spinner').style.display = isLoading ? 'inline' : 'none';
+    document.getElementById('button-text').style.display = isLoading ? 'none' : 'inline';
 }
 
-favoritesHeader.addEventListener('click', () => {
-    favoritesSection.classList.toggle('open');
-});
-
-archivedOrdersHeader.addEventListener('click', () => {
-    archivedOrdersSection.classList.toggle('open');
-});
+favoritesHeader.addEventListener('click', () => { favoritesSection.classList.toggle('open'); });
+archivedOrdersHeader.addEventListener('click', () => { archivedOrdersSection.classList.toggle('open'); });
 
 function renderFavorites() {
     if (!currentUserProfile || !currentUserProfile.favorites || currentUserProfile.favorites.length === 0) {
         favoritesSection.style.display = 'none';
         return;
     }
-    
     favoritesSection.style.display = 'block';
     favoritesList.innerHTML = '';
-
     currentUserProfile.favorites.forEach(itemId => {
         const menuItemElem = document.querySelector(`.menu-item[data-id="${itemId}"]`);
         if (menuItemElem) {
@@ -2986,11 +2595,9 @@ async function toggleFavorite(itemId) {
         showNotification("Bitte melde dich an, um Favoriten zu speichern.");
         return;
     }
-
     const userRef = doc(db, "users", auth.currentUser.uid);
     let currentFavorites = currentUserProfile.favorites || [];
     const index = currentFavorites.indexOf(itemId);
-
     if (index > -1) {
         currentFavorites.splice(index, 1);
     } else {
@@ -3015,15 +2622,10 @@ function updateFavoriteIcons() {
         if (menuItem) {
             const itemId = menuItem.dataset.id;
             const icon = btn.querySelector('i');
-            if (favoriteIds.includes(itemId)) {
-                btn.classList.add('is-favorite');
-                icon.classList.remove('fa-regular');
-                icon.classList.add('fa-solid');
-            } else {
-                btn.classList.remove('is-favorite');
-                icon.classList.remove('fa-solid');
-                icon.classList.add('fa-regular');
-            }
+            const isFavorite = favoriteIds.includes(itemId);
+            btn.classList.toggle('is-favorite', isFavorite);
+            icon.classList.toggle('fa-solid', isFavorite);
+            icon.classList.toggle('fa-regular', !isFavorite);
         }
     });
 }
@@ -3035,30 +2637,17 @@ function handleCartAction(itemId, action) {
     const name = menuItem.dataset.name;
     const price = parseFloat(menuItem.dataset.price);
 
-    if (!cart[itemId]) {
-        cart[itemId] = { name, price, quantity: 0 };
-    }
+    if (!cart[itemId]) cart[itemId] = { name, price, quantity: 0 };
+    if (action === 'plus') cart[itemId].quantity++;
+    else if (action === 'minus' && cart[itemId].quantity > 0) cart[itemId].quantity--;
 
-    if (action === 'plus') {
-        cart[itemId].quantity++;
-    } else if (action === 'minus') {
-        if (cart[itemId].quantity > 0) {
-            cart[itemId].quantity--;
-        }
-    }
-
-    if (cart[itemId].quantity === 0) {
-        delete cart[itemId];
-    }
+    if (cart[itemId].quantity === 0) delete cart[itemId];
 
     const allItemInstances = document.querySelectorAll(`.menu-item[data-id="${itemId}"]`);
     allItemInstances.forEach(instance => {
         const quantityDisplay = instance.querySelector('.quantity');
-        if (quantityDisplay) {
-            quantityDisplay.textContent = cart[itemId] ? cart[itemId].quantity : 0;
-        }
+        if (quantityDisplay) quantityDisplay.textContent = cart[itemId] ? cart[itemId].quantity : 0;
     });
-
     renderCart();
 }
 
@@ -3067,47 +2656,29 @@ function handleCartAction(itemId, action) {
         const target = e.target;
         const menuItem = target.closest('.menu-item');
         if (!menuItem) return;
-
         const id = menuItem.dataset.id;
-        
-        if (target.closest('.favorite-btn')) {
-            toggleFavorite(id);
-        } else if (target.closest('.plus-btn')) {
-            handleCartAction(id, 'plus');
-        } else if (target.closest('.minus-btn')) {
-            handleCartAction(id, 'minus');
-        }
+        if (target.closest('.favorite-btn')) toggleFavorite(id);
+        else if (target.closest('.plus-btn')) handleCartAction(id, 'plus');
+        else if (target.closest('.minus-btn')) handleCartAction(id, 'minus');
     });
 });
 
 async function checkAndDisplayRestverkauf() {
     if (!restverkaufSection) return;
-
     const now = new Date();
     const isSaleTime = (now.getDay() === 5 && now.getHours() >= 13);
-
-    if (isSaleTime) {
-        restverkaufSection.style.display = 'block';
-        renderRestverkaufItems();
-    } else {
-        restverkaufSection.style.display = 'none';
-    }
+    restverkaufSection.style.display = isSaleTime ? 'block' : 'none';
+    if (isSaleTime) renderRestverkaufItems();
 }
 
 async function renderRestverkaufItems() {
     restverkaufItemsContainer.innerHTML = '<p style="color:white;">Lade Angebote...</p>';
-    
     try {
         const stockPromises = WRAP_IDS.map(id => getDoc(doc(db, "restverkaufStock", id)));
         const stockDocs = await Promise.all(stockPromises);
-        
         const stockData = {};
         stockDocs.forEach(docSnap => {
-            if (docSnap.exists()) {
-                stockData[docSnap.id] = docSnap.data().count;
-            } else {
-                stockData[docSnap.id] = 0;
-            }
+            stockData[docSnap.id] = docSnap.exists() ? docSnap.data().count : 0;
         });
 
         restverkaufItemsContainer.innerHTML = '';
@@ -3115,7 +2686,6 @@ async function renderRestverkaufItems() {
             const product = products[id];
             const stock = stockData[id] || 0;
             const isSoldOut = stock <= 0;
-
             const itemDiv = document.createElement('div');
             itemDiv.className = `restverkauf-item ${isSoldOut ? 'sold-out' : ''}`;
             itemDiv.innerHTML = `
@@ -3123,8 +2693,7 @@ async function renderRestverkaufItems() {
                     <strong>${product.name}</strong>
                     <div class="item-price">${SALE_PRICE.toFixed(2).replace('.', ',')} €</div>
                     <div class="item-stock">${isSoldOut ? 'Ausverkauft' : `Noch ${stock} verfügbar`}</div>
-                </div>
-            `;
+                </div>`;
             restverkaufItemsContainer.appendChild(itemDiv);
         });
     } catch (error) {
@@ -3133,60 +2702,15 @@ async function renderRestverkaufItems() {
     }
 }
 
-function addRestverkaufItemToCart(itemId) {
-    if (Object.keys(cart).length > 0 && !cart.hasOwnProperty('isRestverkauf')) {
-        const proceed = confirm("Dein aktueller Warenkorb wird geleert, um einen Restverkauf-Artikel hinzuzufügen. Fortfahren?");
-        if (!proceed) return;
-    }
-    
-    if (!cart.hasOwnProperty('isRestverkauf')) {
-        resetOrder();
-        cart = { isRestverkauf: true };
-    }
-    
-    const product = products[itemId];
-    if (cart[itemId]) {
-        cart[itemId].quantity++;
-    } else {
-        cart[itemId] = { name: product.name, price: SALE_PRICE, quantity: 1 };
-    }
-
-    showNotification(`${product.name} wurde zum Warenkorb hinzugefügt.`, 'success');
-    renderCartForRestverkauf();
-}
-
-function renderCartForRestverkauf() {
-    renderCart();
-
-    document.querySelector('.pickup-day-picker').style.display = 'none';
-    document.querySelector('.pickup-time-picker').style.display = 'none';
-    
-    document.getElementById('select-day-notice').style.display = 'none';
-    document.getElementById('select-time-notice').style.display = 'none';
-    
-    const notice = document.getElementById('profile-completion-notice');
-    notice.innerHTML = 'Restverkauf-Artikel sind nur zur sofortigen Abholung.';
-    notice.style.display = 'block';
-
-    const hasItems = Object.keys(cart).some(key => key !== 'isRestverkauf');
-    checkoutBtn.disabled = !hasItems;
-}
-
-
-
 async function renderRestverkaufAdmin() {
     if (!adminRestverkaufContainer) return;
     adminRestverkaufContainer.innerHTML = '<p>Lade Bestände...</p>';
-
     try {
         const stockPromises = WRAP_IDS.map(id => getDoc(doc(db, "restverkaufStock", id)));
         const stockDocs = await Promise.all(stockPromises);
-        
         const stockData = {};
         stockDocs.forEach(docSnap => {
-            if (docSnap.exists()) {
-                stockData[docSnap.id] = docSnap.data().count;
-            }
+            if (docSnap.exists()) stockData[docSnap.id] = docSnap.data().count;
         });
 
         adminRestverkaufContainer.innerHTML = '';
@@ -3211,15 +2735,12 @@ async function renderRestverkaufAdmin() {
 async function saveStock(itemId) {
     const input = document.getElementById(`stock-input-${itemId}`);
     const count = parseInt(input.value, 10);
-
     if (isNaN(count) || count < 0) {
         showNotification("Bitte gib eine gültige, positive Zahl ein.", "error");
         return;
     }
-
     try {
-        const itemRef = doc(db, "restverkaufStock", itemId);
-        await setDoc(itemRef, { count: count });
+        await setDoc(doc(db, "restverkaufStock", itemId), { count });
         showNotification(`Bestand für "${products[itemId].name}" wurde auf ${count} gesetzt.`, 'success');
     } catch (error) {
         console.error("Fehler beim Speichern des Bestands:", error);
@@ -3229,7 +2750,6 @@ async function saveStock(itemId) {
 
 async function resetAllStock() {
     if (!confirm("Möchtest du wirklich alle Restbestände auf 0 zurücksetzen?")) return;
-    
     try {
         const resetPromises = WRAP_IDS.map(id => setDoc(doc(db, "restverkaufStock", id), { count: 0 }));
         await Promise.all(resetPromises);
@@ -3243,18 +2763,13 @@ async function resetAllStock() {
 
 if (adminRestverkaufContainer) {
     adminRestverkaufContainer.addEventListener('click', e => {
-        if (e.target.matches('.save-stock-btn')) {
-            saveStock(e.target.dataset.id);
-        }
+        if (e.target.matches('.save-stock-btn')) saveStock(e.target.dataset.id);
     });
-
     document.getElementById('reset-restverkauf-btn').addEventListener('click', resetAllStock);
 }
 
-// --- NEU: Event Listener für den Verifizierungs-Button ---
 verifyAccountBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
-    // Funktion wird nur ausgeführt, wenn der Nutzer angemeldet und die Verifizierung aktiviert ist
     if (!user || !ACCOUNT_VERIFICATION_ENABLED) return;
 
     const enteredPin = verificationPinInput.value.trim();
@@ -3267,10 +2782,9 @@ verifyAccountBtn.addEventListener('click', async () => {
         setButtonLoading(verifyAccountBtn, true);
         try {
             const userDocRef = doc(db, "users", user.uid);
-            // Firestore-Dokument des Nutzers aktualisieren
             await updateDoc(userDocRef, { isVerified: true });
             showNotification("Dein Konto wurde erfolgreich verifiziert!", "success");
-            await showProfilePage(); // Profilansicht neu laden, um die Änderung anzuzeigen
+            await showProfilePage();
         } catch (error) {
             console.error("Fehler bei der Verifizierung:", error);
             showNotification("Ein Fehler ist aufgetreten. Bitte versuche es erneut.", "error");
@@ -3279,6 +2793,6 @@ verifyAccountBtn.addEventListener('click', async () => {
         }
     } else {
         showNotification("Der eingegebene PIN ist falsch.", "error");
-        verificationPinInput.value = ''; // Feld leeren bei falscher Eingabe
+        verificationPinInput.value = '';
     }
 });

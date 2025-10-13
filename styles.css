@@ -7,20 +7,18 @@
   --bg: #f5f5f5;
   --card: #fff;
   --line: #e7e7e7;
- 
   --success: #43a047;
   --error: #e53935;
-  --warning: #f59e0b; /* Neue Farbe für "Vorbereitet" */
-  --favorite: #ffc107; /* Farbe für Favoriten */
+  --warning: #f59e0b;
+  --favorite: #ffc107;
 }
 
-* { 
+* {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-/* Basis-Animation für sanftes Einblenden von Sektionen */
 main {
     flex-grow: 1;
     animation: fadeIn 0.5s ease-in-out;
@@ -30,7 +28,6 @@ main {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
 
 body {
   font-family: 'Poppins', sans-serif;
@@ -47,9 +44,8 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     user-select: none;
 }
 
-
 .navbar {
-    background: #333; 
+    background: #333;
     padding: 14px 30px;
     position: sticky;
     top: 0;
@@ -72,7 +68,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .nav-logo img {
     height: 100%;
     width: auto;
-    transform: scale(2.5); 
+    transform: scale(2.5);
 }
 .nav-logo {
     display: flex;
@@ -122,7 +118,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     transform-origin: bottom left;
 }
 
-
 .nav-links a:hover {
     color: #ddd;
 }
@@ -139,14 +134,13 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     text-decoration: none;
 }
 
-
 .hamburger-menu {
     display: none;
     background: none;
     border: none;
     cursor: pointer;
     padding: 10px;
-    z-index: 1001; 
+    z-index: 1001;
 }
 .hamburger-bar {
     display: block;
@@ -167,7 +161,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     transition: background .2s ease, transform .2s ease;
     text-align: center;
     text-decoration: none;
-    width: 100%; 
+    width: 100%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -178,14 +172,13 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     transform: scale(0.98);
 }
 
-
 .nav-button, .cta-button, #save-profile-btn, .modal-content button:not(.danger-button):not(.secondary-button) {
     background: var(--brand);
     color: #fff;
 }
 
 .nav-button:hover, .cta-button:hover, #save-profile-btn:hover, .modal-content button:hover:not(:disabled):not(.danger-button) {
-    background: #555535; 
+    background: #555535;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
@@ -199,8 +192,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .cta-button {
     padding: 15px 30px;
     font-size: 16px;
-    width: auto; 
-    
+    width: auto;
 }
 
 .divider {
@@ -255,14 +247,12 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     transform: translateY(-2px);
 }
 #delete-account-btn, .report-order-btn, .block-user-btn, #delete-old-orders-btn {
-    width: auto; 
+    width: auto;
 }
 .danger-button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
 }
-
-
 
 .finish-order-btn {
     background-color: var(--success);
@@ -270,7 +260,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     width: auto;
     display: inline-flex;
     align-items: center;
-    gap: 5px; 
+    gap: 5px;
     font-size: 0.9em;
     padding: 10px 18px;
 }
@@ -298,13 +288,12 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     transform: translateY(-2px);
 }
 
-
 .welcome-section {
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
-    min-height: calc(100vh - 80px); 
+    min-height: calc(100vh - 80px);
     padding: 0 20px;
 }
 
@@ -312,12 +301,14 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 3rem;
     margin-bottom: 10px;
 }
+.welcome-content h2 {
+   color: #e53935
+}
 .welcome-content p {
     font-size: 1.2rem;
     color: var(--muted);
     margin-bottom: 30px;
 }
-
 
 .placeholder-section {
     display: flex;
@@ -336,8 +327,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 1.1rem;
 }
 
-
-
 #order-section {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -351,7 +340,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
         "menu cart";
 }
 
-/* NEU: Allgemeine Sektion für einklappbare Bereiche */
 .collapsible-section {
     background: var(--card);
     border-radius: 12px;
@@ -400,7 +388,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     overflow-y: auto;
 }
 
-
 .menu-container {
     grid-area: menu;
     display: flex;
@@ -419,11 +406,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     box-shadow: 0 6px 20px rgba(0,0,0,0.07);
 }
 
-/* styles.css */
-
-/* ... (bestehender Code bis zum Ende) ... */
-
-/* --- Stile für Nutzerverwaltung (Admin) --- */
 .user-management-section .sub-section {
     margin-top: 40px;
 }
@@ -453,9 +435,8 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 
 .user-search-form button {
    width: auto;
-   flex-shrink: 0; /* Verhindert, dass der Button schrumpft */
+   flex-shrink: 0;
 }
-
 
 #user-search-results {
     display: flex;
@@ -543,8 +524,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     color: var(--ink);
 }
 
-/* --- Media Queries --- */
-
 @media screen and (max-width: 768px) {
     .user-result-card {
         grid-template-columns: 1fr;
@@ -560,9 +539,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
         justify-content: flex-end;
     }
 }
-
-
-
 
 .menu-category {
     background: var(--card);
@@ -623,13 +599,11 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     color: var(--favorite);
 }
 
-
 .quantity-selector {
     display: flex;
     align-items: center;
     gap: 15px;
 }
-
 
 .quantity-btn {
     font-family: inherit;
@@ -668,7 +642,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     padding: 25px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     position: sticky;
-    top: 100px; 
+    top: 100px;
 }
 
 #cart-items-list {
@@ -789,7 +763,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     color: var(--muted);
 }
 
-
 .custom-select-wrapper {
     position: relative;
     width: 100%;
@@ -820,7 +793,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     box-shadow: 0 0 0 3px rgba(106, 106, 67, 0.2);
 }
 
-
 .arrow {
     position: relative;
     height: 10px;
@@ -850,7 +822,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     transform: rotate(45deg);
 }
 
-
 .custom-options {
     position: absolute;
     display: block;
@@ -878,7 +849,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     pointer-events: all;
     transform: translateY(0);
 }
-
 
 .custom-option {
     position: relative;
@@ -912,11 +882,9 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     line-height: 1.4;
 }
 
-
-
 #profile-section {
     padding: 40px 20px;
-    display: none; 
+    display: none;
     justify-content: center;
 }
 
@@ -948,7 +916,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     line-height: 1.6;
     margin-bottom: 20px;
 }
-
 
 .profile-card h2 {
     margin-top: 0;
@@ -996,7 +963,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     width: auto;
 }
 
-
 .profile-field input, .modal-content input {
     font: inherit;
     width: 100%;
@@ -1031,8 +997,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     margin: 15px 0 25px 0;
 }
 
-
-
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.5);
@@ -1049,7 +1013,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     max-width: 400px;
     text-align: center;
     position: relative;
-    margin: 0 15px; 
+    margin: 0 15px;
     animation: slideInUp 0.4s ease;
     max-height: 90vh;
     overflow-y: auto;
@@ -1060,7 +1024,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     to { transform: translateY(0); opacity: 1; }
 }
 
-
 #reported-order-detail-modal .modal-content {
     max-width: 600px;
     text-align: left;
@@ -1068,10 +1031,10 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 
 .modal-content h2 { margin-top: 0; margin-bottom: 25px; }
 .modal-content input { margin-bottom: 15px; }
-.modal-content button { 
-    margin-top: 10px; 
-    border-radius: 10px; 
-    padding: 14px; 
+.modal-content button {
+    margin-top: 10px;
+    border-radius: 10px;
+    padding: 14px;
 }
 .modal-content button:disabled { background-color: #ccc; cursor: not-allowed; }
 .modal-info-text {
@@ -1090,7 +1053,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     border: 1px solid var(--error);
 }
 
-
 .password-wrapper { position: relative; display: flex; align-items: center; }
 .password-wrapper input { padding-right: 40px; }
 .password-wrapper i { position: absolute; right: 15px; cursor: pointer; color: #999; }
@@ -1106,12 +1068,11 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .toggle-link-text a { color: var(--brand); text-decoration: underline; font-weight: 600; }
 #login-view .toggle-link-text { margin-top: 10px; }
 
-
 .close-button, .close-reauth-button, .close-checkout-button {
     position: absolute; top: 10px; right: 15px; font-size: 28px;
     color: #aaa; cursor: pointer; transition: color 0.2s ease, transform 0.2s ease;
 }
-.close-button:hover, .close-reauth-button:hover, .close-checkout-button:hover { 
+.close-button:hover, .close-reauth-button:hover, .close-checkout-button:hover {
     color: var(--ink);
     transform: rotate(90deg);
 }
@@ -1162,7 +1123,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     margin-top: 0;
 }
 
-
 .notification {
     position: fixed;
     bottom: -100px;
@@ -1186,7 +1146,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     bottom: 30px;
 }
 
-
 .notification.success {
     background-color: var(--success);
 }
@@ -1194,7 +1153,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .notification.error {
     background-color: var(--error);
 }
-
 
 .orders-display-section {
     padding: 40px 20px;
@@ -1216,7 +1174,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     text-align: center;
     margin-bottom: 30px;
 }
-
 
 #user-orders-list, #management-orders-list, #reported-orders-list, #archived-orders-list {
     display: flex;
@@ -1323,9 +1280,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 0.9em;
 }
 
-
 .order-pickup-time {
-    
     background: #f9f9f9;
     padding: 5px 10px;
     border-radius: 8px;
@@ -1349,7 +1304,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 0.8em;
     color: var(--muted);
 }
-
 
 .order-items-container {
     margin: 20px 0;
@@ -1405,7 +1359,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     align-items: center;
     flex-wrap: wrap;
 }
-
 
 .stats-container {
     display: grid;
@@ -1466,7 +1419,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     color: var(--muted);
 }
 
-
 #reported-order-detail-content .order-header {
     margin-bottom: 15px;
 }
@@ -1498,13 +1450,11 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     border-top: 1px solid var(--line);
 }
 
-
-
 .site-footer {
     background-color: #333;
     color: #ccc;
     padding: 40px 20px;
-    margin-top: auto; 
+    margin-top: auto;
 }
 
 .footer-content {
@@ -1547,12 +1497,10 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 }
 
 @media screen and (max-width: 850px) {
-
-    
     .nav-links {
         position: fixed;
         top: 0;
-        left: -100%; 
+        left: -100%;
         height: 100%;
         width: 70%;
         max-width: 300px;
@@ -1560,13 +1508,13 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
         justify-content: center;
         align-items: center;
         gap: 30px;
-        background-color: #222; 
+        background-color: #222;
         transition: left 0.4s ease-in-out;
         z-index: 1000;
     }
 
     .nav-links.nav-active {
-        left: 0; 
+        left: 0;
     }
 
     .nav-links a {
@@ -1574,15 +1522,13 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     }
 
     .hamburger-menu {
-        display: block; 
+        display: block;
     }
 
     .nav-user-actions {
-   
-        margin-left: auto; 
+        margin-left: auto;
     }
 
-   
     .welcome-content h1 {
         font-size: 2.2rem;
     }
@@ -1590,9 +1536,8 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
         font-size: 1rem;
     }
 
-  
     #order-section {
-        grid-template-columns: 1fr; 
+        grid-template-columns: 1fr;
         padding: 0 15px;
         margin: 20px auto;
         grid-template-areas:
@@ -1602,11 +1547,10 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     }
 
     .cart-container {
-        position: static; 
+        position: static;
         margin-top: 30px;
     }
 
-    
     #profile-section {
         padding: 20px 15px;
     }
@@ -1622,7 +1566,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
         flex-direction: column;
     }
 
-
     .order-header, .order-footer {
         flex-direction: column;
         align-items: flex-start;
@@ -1632,7 +1575,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
      .order-day-tabs {
         flex-wrap: wrap;
     }
-    
+
     .order-user-info, .order-pickup-time {
         align-items: flex-start;
         text-align: left;
@@ -1640,10 +1583,9 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     }
     .order-actions {
         width: 100%;
-        justify-content: flex-end; 
+        justify-content: flex-end;
     }
 
-    
     .footer-content {
         flex-direction: column;
         align-items: center;
@@ -1654,8 +1596,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
         max-width: 300px;
     }
 }
-
-
 
 .google-signin-btn {
     background-color: #fff;
@@ -1681,7 +1621,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     height: 18px;
 }
 
-
 .google-signin-btn {
     background-color: #fff;
     color: #444;
@@ -1704,7 +1643,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     height: 20px;
 }
 
-
 .hamburger-menu.is-active .hamburger-bar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
 }
@@ -1722,11 +1660,11 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     bottom: 0;
     left: 0;
     width: 100%;
-    background-color: #222; 
+    background-color: #222;
     color: #eee;
     padding: 20px;
-    z-index: 2500; 
-    display: none; 
+    z-index: 2500;
+    display: none;
     box-shadow: 0 -4px 15px rgba(0,0,0,0.2);
     font-size: 14px;
     transform: translateY(100%);
@@ -1737,7 +1675,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     transform: translateY(0);
     display: block;
 }
-
 
 .cookie-banner-content {
     max-width: 1200px;
@@ -1776,7 +1713,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     background-color: #555535;
 }
 
-
 @media screen and (max-width: 768px) {
     .cookie-banner-content {
         flex-direction: column;
@@ -1802,9 +1738,8 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     line-height: 1.2;
 }
 
-
 .modal-button-group {
-    flex-direction: column-reverse; 
+    flex-direction: column-reverse;
 }
 
 .modal-button-group .secondary-button {
@@ -1831,7 +1766,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     border: 3px solid rgba(0, 0, 0, 0.2);
     border-top-color: var(--ink);
 }
-
 
 @keyframes spin {
     to { transform: rotate(360deg); }
@@ -1863,7 +1797,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 
 #payment-request-button-container {
   margin-bottom: 15px;
-  display: none; 
+  display: none;
 }
 
 #payment-request-button-container > div {
@@ -1940,20 +1874,17 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     width: auto;
 }
 
-
-/* --- Anpassung für lange Benutzernamen auf kleinen Bildschirmen --- */
 @media screen and (max-width: 850px) {
    #user-profile-link {
-        font-size: 0.9em; /* Schrift leicht verkleinert, wie gewünscht */
-        max-width: 90px; /* Maximale Breite, bevor der Text gekürzt wird */
-        overflow: hidden; /* Versteckt den überfließenden Text */
-        text-overflow: ellipsis; /* Fügt die "..." am Ende hinzu */
-        white-space: nowrap; /* Verhindert, dass der Text umbricht */
-        vertical-align: middle; /* Sorgt für eine saubere Ausrichtung */
+        font-size: 0.9em;
+        max-width: 90px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
     }
 }
 
-/* --- Stile für Admin-Speisekarte --- */
 #admin-menu-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1984,43 +1915,40 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 }
 
 .toggle-sold-out-btn {
-    font-size: 0.7em;  /* Etwas kleiner */
-    padding: 5px 10px; /* Weniger Polsterung */
+    font-size: 0.7em;
+    padding: 5px 10px;
     width: auto;
     white-space: nowrap;
 }
 
-/* NEU: Stil für den "Wieder verfügbar"-Button im Admin-Panel */
 .make-available-btn {
-    font-size: 0.7em;  /* Etwas kleiner */
-    padding: 5px 10px; /* Weniger Polsterung */
+    font-size: 0.7em;
+    padding: 5px 10px;
     width: auto;
     white-space: nowrap;
-    background-color: var(--success); /* Grüne Farbe */
+    background-color: var(--success);
     color: #fff;
 }
 
-/* --- Stile für den "Ausverkauft"-Status im Kundenmenü --- */
 .menu-item.sold-out {
     position: relative;
     opacity: 0.6;
-    pointer-events: none; /* Verhindert Klicks auf das gesamte Item */
+    pointer-events: none;
 }
 
-/* Spezifische Anpassung für den Anmelde-Button in der Navigationsleiste */
 .nav-button {
-    padding: 8px 16px; /* Verringert den Innenabstand */
-    font-size: 0.9em;  /* Macht die Schrift etwas kleiner */
-    width: auto;       /* Stellt sicher, dass der Button nicht die volle Breite einnimmt */
+    padding: 8px 16px;
+    font-size: 0.9em;
+    width: auto;
 }
 
 .menu-item.sold-out .favorite-btn {
-    pointer-events: auto; /* Erlaubt Klicks auf den Button */
-    cursor: pointer;      /* ZEIGT den korrekten "Hand"-Mauszeiger an */
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .make-available-btn:hover {
-    background-color: #388e3c; /* Dunkleres Grün beim Hover */
+    background-color: #388e3c;
 }
 .menu-item.sold-out::after {
     content: 'AUSVERKAUFT';
@@ -2042,7 +1970,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     cursor: not-allowed;
 }
 
-/* --- Stil für den PDF-Link-Container --- */
 .pdf-menu-link-container {
     background: #f9f9f9;
     border: 1px solid var(--line);
@@ -2063,9 +1990,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     gap: 10px;
 }
 
-/* styles.css */
-
-/* --- Stile für den Restverkauf (Kundenansicht) --- */
 #restverkauf-section {
     background: linear-gradient(45deg, #6a6a43, #5a5a3a);
     color: white;
@@ -2112,7 +2036,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .restverkauf-item-info .item-price {
     font-weight: bold;
     font-size: 1.3em;
-    color: #ffc107; /* --favorite color */
+    color: #ffc107;
 }
 .restverkauf-item-info .item-stock {
     font-size: 0.85em;
@@ -2143,7 +2067,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     cursor: not-allowed;
 }
 
-/* --- Stile für Restverkauf (Admin-Tools) --- */
 #admin-restverkauf-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -2187,9 +2110,8 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
   text-align: center;
 }
 
-/* NEU: Stile für die Warenkorb-Aktionen */
 .cart-item {
-    align-items: center; /* Sorgt für vertikale Zentrierung */
+    align-items: center;
 }
 
 .cart-item-details {
@@ -2257,15 +2179,15 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     transform: scale(1.1);
 }
 
-/* NEU: Stil für deaktivierte Optionen im Custom Select */
 .custom-option.disabled {
     color: #ccc;
     background-color: #f9f9f9;
     cursor: not-allowed;
-    pointer-events: none; /* Verhindert Klick-Events auf dem Element */
+    pointer-events: none;
 }
 
 .custom-option.disabled:hover {
-    background-color: #f9f9f9; /* Überschreibt den Hover-Effekt */
+    background-color: #f9f9f9;
     color: #ccc;
 }
+
