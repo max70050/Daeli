@@ -2067,3 +2067,4 @@ function setLoading(isLoading) {
         document.getElementById('button-text').style.display = 'inline';
     }
 }
+
