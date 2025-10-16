@@ -12,7 +12,8 @@ import {
     EmailAuthProvider,
     reauthenticateWithCredential,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    applyActionCode
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore,
@@ -244,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         history.scrollRestoration = 'manual';
     }
     window.scrollTo(0, 0);
+    handleEmailVerificationRedirect();
 
     const cookieBanner = document.getElementById('cookie-banner');
     const acceptBtn = document.getElementById('cookie-accept-btn');
@@ -1753,7 +1755,10 @@ backToLoginLink.addEventListener('click', (e) => { e.preventDefault(); switchMod
 registerBtn.addEventListener('click', async () => {
     const username = registerUsernameInput.value.trim();
     const email = registerEmailInput.value;
+    localStorage.setItem('emailForSignIn', email);
     const password = registerPasswordInput.value;
+    
+
 
     if (!username || !email || !password) {
         showNotification("Bitte fülle alle Felder aus.");
@@ -1763,6 +1768,12 @@ registerBtn.addEventListener('click', async () => {
     setButtonLoading(registerBtn, true);
 
     try {
+       const actionCodeSettings = {
+    url: window.location.href, 
+    handleCodeInApp: true
+};
+
+    
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         await updateProfile(user, { displayName: username });
@@ -1773,8 +1784,8 @@ registerBtn.addEventListener('click', async () => {
             lastNameChangeCount: 0, isCoAdmin: false, isAdmin: false,
             isBlocked: false, isVerified: false, balance: 0, favorites: []
         });
-
-        await sendEmailVerification(user);
+        await sendEmailVerification(user, actionCodeSettings);
+        
         document.getElementById('verification-email-display').textContent = email;
         switchModalView(verificationMessage);
 
@@ -1804,6 +1815,42 @@ registerBtn.addEventListener('click', async () => {
         setButtonLoading(registerBtn, false);
     }
 });
+
+
+
+function handleEmailVerificationRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    const actionCode = params.get('oobCode');
+
+    if (mode === 'verifyEmail' && actionCode) {
+        applyActionCode(auth, actionCode)
+            .then(() => {
+                // Bereinigt die URL, ohne die Seite neu zu laden
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                const email = localStorage.getItem('emailForSignIn');
+                showNotification("Deine E-Mail-Adresse wurde erfolgreich verifiziert. Du kannst dich jetzt anmelden.", "success");
+
+                if (email) {
+                    // Öffnet das Login-Fenster und füllt die E-Mail aus
+                    openModal();
+                    loginEmailInput.value = email;
+                    loginPasswordInput.focus(); // Setzt den Fokus auf das Passwortfeld
+                    localStorage.removeItem('emailForSignIn');
+                } else {
+                    openModal(); // Fallback
+                }
+            })
+            .catch((error) => {
+                console.error("Fehler bei der E-Mail-Verifizierung:", error);
+                // Bereinigt ebenfalls die URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                showNotification("Der Bestätigungslink ist ungültig oder abgelaufen. Bitte versuche es erneut.", "error");
+            });
+    }
+}
+
 
 loginBtn.addEventListener('click', async () => {
     const email = loginEmailInput.value;
