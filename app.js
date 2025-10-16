@@ -1,23 +1,23 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { 
-    getAuth, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, 
-    onAuthStateChanged, 
+import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
     signOut,
     sendEmailVerification,
     updateProfile,
     sendPasswordResetEmail,
-    deleteUser, 
-    EmailAuthProvider, 
+    deleteUser,
+    EmailAuthProvider,
     reauthenticateWithCredential,
     GoogleAuthProvider,
     signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
+import {
+    getFirestore,
+    doc,
+    setDoc,
     getDoc,
     onSnapshot,
     updateDoc,
@@ -28,8 +28,12 @@ import {
     where,
     orderBy,
     getDocs,
-    Timestamp
+    Timestamp,
+    runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const ACCOUNT_VERIFICATION_ENABLED = true;
+const ACCOUNT_VERIFICATION_CODE = "00000000";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCNXQuFW6SLR_w5x1NxlLScp17LjppAuCA",
@@ -46,48 +50,48 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
-
 const forbiddenUsernameFragments = [
-    
     'admin', 'administrator', 'root', 'support', 'hilfe', 'gast',
     'moderator', 'system', 'info', 'kontakt', 'webmaster', 'sysadmin',
     'postmaster', 'staff', 'team', 'bot', 'robot', 'official',
     'offiziell', 'test', 'user', 'master', 'superuser', 'chef',
-
-    
     'arsch', 'fick', 'hure', 'nazi', 'hitler', 'scheisse', 'penis', 'vagina',
     'arschloch', 'fotze', 'muschi', 'wixer', 'wichser', 'schlampe',
     'nutte', 'miststück', 'bastard', 'depp', 'idiot', 'trottel', 'vollidiot',
     'spast', 'spasst', 'behinderte', 'kanake', 'neger', 'mistgeburt',
-
-    
     'bitch', 'fuck', 'shit', 'asshole', 'cunt', 'dick', 'pussy',
     'slut', 'whore', 'nigger', 'faggot', 'retard', 'douchebag',
-
-    
     'heil', 'ss', 'wehrmacht', 'gestapo', 'hakenkreuz', 'hknkrz',
     '88', '18', 'siegheil', 'is', 'isis', 'terrorist', 'alqaida',
-
-    
     'kaufen', 'verkaufen', 'sale', 'shop', 'angebot', 'deal',
     'cialis', 'viagra', 'casino', 'wett', 'poker',
-
-    
     'www', 'http', 'https', 'com', 'net', 'org', 'de', 'io',
-
-    
     'schwarz', 'dæli', 'mensa', 'hm', 'HM', 'Hm', 'hM'
 ];
 
 let cart = {};
 let currentUserProfile = null;
 let selectedPickupDay = null;
+let searchDebounceTimer;
 
-const stripe = Stripe("pk_test_51SEri0AmYRR9jDsfQRpujMicuceGW065Ayzz1yFe34uA0pOlFuxjyInkwZvFdCYBOdEHgOscKInwfb3xDYrDSGo100jgxcjLYi"); 
-const backendUrl = 'https://daeli-backend.onrender.com'; 
+const stripe = Stripe("pk_test_51SEri0AmYRR9jDsfQRpujMicuceGW065Ayzz1yFe34uA0pOlFuxjyInkwZvFdCYBOdEHgOscKInwfb3xDYrDSGo100jgxcjLYi");
+const backendUrl = 'https://daeli-backend.onrender.com';
 let elements;
 
-
+const restverkaufSection = document.getElementById('restverkauf-section');
+const restverkaufItemsContainer = document.getElementById('restverkauf-items-container');
+const adminRestverkaufContainer = document.getElementById('admin-restverkauf-container');
+const WRAP_IDS = ['4', '5', '6'];
+const SALE_PRICE = 1.50;
+const profileBalance = document.getElementById('profile-balance');
+const topupAmountInput = document.getElementById('topup-amount');
+const topupBalanceBtn = document.getElementById('topup-balance-btn');
+const topupErrorMessage = document.getElementById('topup-error-message');
+const payWithBalanceBtn = document.getElementById('pay-with-balance-btn');
+const userSearchInput = document.getElementById('user-search-input');
+const userSearchBtn = document.getElementById('user-search-btn');
+const userSearchResultsContainer = document.getElementById('user-search-results');
+const userDetailModal = document.getElementById('user-detail-modal');
 const checkoutInitialView = document.getElementById('checkout-initial-view');
 const startOnlinePaymentBtn = document.getElementById('start-online-payment-btn');
 const paymentElementContainer = document.getElementById('payment-element-container');
@@ -122,11 +126,11 @@ const loginView = document.getElementById('login-view');
 const registerView = document.getElementById('register-view');
 const googleUsernameView = document.getElementById('google-username-view');
 const verificationMessage = document.getElementById('verification-message');
-const passwordResetView = document.getElementById('password-reset-view'); 
+const passwordResetView = document.getElementById('password-reset-view');
 const showRegisterLink = document.getElementById('show-register');
 const showLoginLink = document.getElementById('show-login');
-const showPasswordResetLink = document.getElementById('show-password-reset'); 
-const backToLoginLink = document.getElementById('back-to-login'); 
+const showPasswordResetLink = document.getElementById('show-password-reset');
+const backToLoginLink = document.getElementById('back-to-login');
 const loginEmailInput = document.getElementById('login-email');
 const loginPasswordInput = document.getElementById('login-password');
 const loginBtn = document.getElementById('login-btn');
@@ -138,8 +142,8 @@ const googleSignInBtn = document.getElementById('google-signin-btn');
 const googleUsernameInput = document.getElementById('google-username-input');
 const googleUsernameSubmitBtn = document.getElementById('google-username-submit-btn');
 const googleRegisterBtn = document.getElementById('google-register-btn');
-const resetEmailInput = document.getElementById('reset-email'); 
-const sendResetEmailBtn = document.getElementById('send-reset-email-btn'); 
+const resetEmailInput = document.getElementById('reset-email');
+const sendResetEmailBtn = document.getElementById('send-reset-email-btn');
 const profileEmail = document.getElementById('profile-email');
 const resetPasswordBtn = document.getElementById('reset-password-btn');
 const profileUsername = document.getElementById('profile-username');
@@ -149,11 +153,11 @@ const saveProfileBtn = document.getElementById('save-profile-btn');
 const usernameLimitInfo = document.getElementById('username-limit-info');
 const fullnameLimitInfo = document.getElementById('fullname-limit-info');
 const discardProfileBtn = document.getElementById('discard-profile-btn');
-const deleteAccountBtn = document.getElementById('delete-account-btn'); 
-const reauthDeleteModal = document.getElementById('reauth-delete-modal'); 
-const closeReauthButton = document.querySelector('.close-reauth-button'); 
-const reauthPasswordInput = document.getElementById('reauth-password'); 
-const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); 
+const deleteAccountBtn = document.getElementById('delete-account-btn');
+const reauthDeleteModal = document.getElementById('reauth-delete-modal');
+const closeReauthButton = document.querySelector('.close-reauth-button');
+const reauthPasswordInput = document.getElementById('reauth-password');
+const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 const menuContainer = document.querySelector('.menu-container');
 const cartItemsList = document.getElementById('cart-items-list');
 const cartPlaceholder = document.getElementById('cart-placeholder');
@@ -162,7 +166,7 @@ const checkoutBtn = document.getElementById('checkout-btn');
 const checkoutModal = document.getElementById('checkout-modal');
 const closeCheckoutButton = document.querySelector('.close-checkout-button');
 const cancelOrderBtn = document.getElementById('cancel-order-btn');
-const confirmOrderBtn = document.getElementById('confirm-order-btn');
+const googleAgbCheckbox = document.getElementById('google-agb-checkbox');
 const checkoutTotalPrice = document.getElementById('checkout-total-price');
 const checkoutPickupDay = document.getElementById('checkout-pickup-day');
 const checkoutPickupTime = document.getElementById('checkout-pickup-time');
@@ -181,23 +185,63 @@ const lengthCheck = document.getElementById('length-check');
 const uppercaseCheck = document.getElementById('uppercase-check');
 const numberCheck = document.getElementById('number-check');
 const pickupDaySelector = document.getElementById('pickup-day-selector');
-
 const usernameErrorMessage = document.getElementById('username-error-message');
 const googleUsernameErrorMessage = document.getElementById('google-username-error-message');
-
+const usernameProfileError = document.getElementById('username-profile-error');
+const firstnameProfileError = document.getElementById('firstname-profile-error');
+const lastnameProfileError = document.getElementById('lastname-profile-error');
+const statsTodayOrdersCount = document.getElementById('stats-today-orders-count');
+const favoritesSection = document.getElementById('favorites-section');
+const favoritesHeader = document.getElementById('favorites-header');
+const favoritesList = document.getElementById('favorites-list');
+const archivedOrdersListContainer = document.getElementById('archived-orders-list');
+const archivedOrdersSection = document.getElementById('archived-orders-section');
+const archivedOrdersHeader = document.getElementById('archived-orders-header');
+const verifyAccountBtn = document.getElementById('verify-account-btn');
+const verificationPinInput = document.getElementById('verification-pin');
+const agbCheckbox = document.getElementById('agb-checkbox');
 
 const dayMapping = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 const dayIndexMapping = { "Montag": 1, "Dienstag": 2, "Mittwoch": 3, "Donnerstag": 4, "Freitag": 5 };
 
-// NEUE HILFSFUNKTION (am besten oben in der Datei einfügen)
 const getAuthUserAfterRedirect = () => new Promise((resolve, reject) => {
     const unsubscribe = onAuthStateChanged(auth, user => {
-        unsubscribe(); // Wir brauchen den Listener nur einmal
+        unsubscribe();
         resolve(user);
     }, reject);
 });
 
+const navbar = document.querySelector('.navbar');
+let lastScrollTop = 0;
+
+window.addEventListener('scroll', () => {
+    let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    if (scrollTop > 100) {
+        if (scrollTop > lastScrollTop) {
+            navbar.classList.add('nav-hidden');
+        } else {
+            navbar.classList.remove('nav-hidden');
+        }
+    }
+    lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+}, false);
+
+const validateGoogleRegistration = () => {
+    const username = googleUsernameInput.value.trim();
+    const agbChecked = googleAgbCheckbox.checked;
+    const isUsernameValid = username.length >= 5 && !forbiddenUsernameFragments.some(fragment => username.toLowerCase().includes(fragment));
+    googleUsernameSubmitBtn.disabled = !(isUsernameValid && agbChecked);
+};
+
+googleUsernameInput.addEventListener('input', validateGoogleRegistration);
+googleAgbCheckbox.addEventListener('change', validateGoogleRegistration);
+
 document.addEventListener('DOMContentLoaded', () => {
+    if (history.scrollRestoration) {
+        history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+
     const cookieBanner = document.getElementById('cookie-banner');
     const acceptBtn = document.getElementById('cookie-accept-btn');
 
@@ -212,13 +256,142 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCustomSelect(customHourSelect);
     setupCustomSelect(customMinuteSelect);
-    populateHours();
-    populateMinutes();
     setupDaySelector();
     setupOrderTabs();
-    checkStatus(); // WICHTIG: Status der Online-Zahlung prüfen
+    checkStatus();
+    setupInputValidation();
+    checkAndDisplayRestverkauf();
 });
 
+if (userSearchInput) {
+    userSearchInput.addEventListener('input', handleUserSearchOnInput);
+}
+
+const products = {
+    '1': { name: "Halber Schinken Wrap", price: 3.00 },
+    '2': { name: "Halber Sweet Chili Chicken Wrap", price: 3.00 },
+    '3': { name: "Halber Hähnchen Kebab Wrap", price: 3.00 },
+    '4': { name: "Ganzer Schinken Wrap", price: 6.00 },
+    '5': { name: "Ganzer Sweet Chili Chicken Wrap", price: 6.00 },
+    '6': { name: "Ganzer Hähnchen Kebab Wrap", price: 6.00 },
+    '7': { name: "Viertel Pizza Margherita", price: 2.50 },
+    '8': { name: "Viertel Pizza Diavolo", price: 2.50 },
+    '9': { name: "Viertel Pizza Thunfisch", price: 2.50 },
+    '10': { name: "Viertel Pizza Funghi", price: 2.50 },
+    '11': { name: "Halbe Pizza Margherita", price: 4.00 },
+    '12': { name: "Halbe Pizza Diavolo", price: 4.00 },
+    '13': { name: "Halbe Pizza Thunfisch", price: 4.00 },
+    '14': { name: "Halbe Pizza Funghi", price: 4.00 },
+    '15': { name: "Ganze Pizza Margherita", price: 8.00 },
+    '16': { name: "Ganze Pizza Diavolo", price: 8.00 },
+    '17': { name: "Ganze Pizza Thunfisch", price: 8.00 },
+    '18': { name: "Ganze Pizza Funghi", price: 8.00 },
+    '19': { name: "Focaccia Mozzarella", price: 4.00 },
+    '20': { name: "Focaccai Veggie Love", price: 4.00 },
+    '21': { name: "Halber Flammkuchen Traditionell", price: 3.50 },
+    '22': { name: "Halber Flammkuchen Mediterran", price: 3.50 },
+    '23': { name: "Ganzer Flammkuchen Traditionell", price: 6.00 },
+    '24': { name: "Ganzer Flammkuchen Mediterran", price: 6.00 }
+};
+
+const adminMenuContainer = document.getElementById('admin-menu-container');
+let currentMenuStatus = {};
+
+async function fetchMenuStatus() {
+    try {
+        const statusCollection = collection(db, "menuStatus");
+        const snapshot = await getDocs(statusCollection);
+        const statusMap = {};
+        snapshot.forEach(doc => {
+            statusMap[doc.id] = doc.data().isSoldOut;
+        });
+        currentMenuStatus = statusMap;
+        return statusMap;
+    } catch (error) {
+        console.error("Fehler beim Abrufen des Menüstatus:", error);
+        showNotification("Fehler beim Laden des Menüstatus.", "error");
+        return {};
+    }
+}
+
+async function renderAdminMenu() {
+    if (!adminMenuContainer) return;
+    adminMenuContainer.innerHTML = '<p>Lade Speisekarte...</p>';
+
+    await fetchMenuStatus();
+    adminMenuContainer.innerHTML = '';
+
+    for (const id in products) {
+        const product = products[id];
+        const isSoldOut = currentMenuStatus[id] === true;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `admin-menu-item ${isSoldOut ? 'sold-out' : ''}`;
+        itemDiv.dataset.id = id;
+
+        const buttonClass = isSoldOut ? 'make-available-btn' : 'danger-button toggle-sold-out-btn';
+        const buttonText = isSoldOut ? 'Wieder verfügbar' : 'Ausverkauft';
+
+        itemDiv.innerHTML = `
+            <span class="admin-item-info">${product.name}</span>
+            <button class="${buttonClass}">${buttonText}</button>
+        `;
+        adminMenuContainer.appendChild(itemDiv);
+    }
+}
+
+async function toggleSoldOutStatus(itemId) {
+    const isCurrentlySoldOut = currentMenuStatus[itemId] === true;
+    const newStatus = !isCurrentlySoldOut;
+
+    try {
+        const itemRef = doc(db, "menuStatus", itemId);
+        await setDoc(itemRef, { isSoldOut: newStatus });
+        showNotification(`"${products[itemId].name}" wurde als ${newStatus ? 'ausverkauft' : 'verfügbar'} markiert.`, "success");
+
+        currentMenuStatus[itemId] = newStatus;
+        const itemElement = adminMenuContainer.querySelector(`.admin-menu-item[data-id="${itemId}"]`);
+        const buttonElement = itemElement.querySelector('button');
+
+        itemElement.classList.toggle('sold-out', newStatus);
+
+        if (newStatus) {
+            buttonElement.classList.remove('danger-button', 'toggle-sold-out-btn');
+            buttonElement.classList.add('make-available-btn');
+            buttonElement.textContent = 'Wieder verfügbar';
+        } else {
+            buttonElement.classList.remove('make-available-btn');
+            buttonElement.classList.add('danger-button', 'toggle-sold-out-btn');
+            buttonElement.textContent = 'Ausverkauft';
+        }
+
+        updateCustomerMenuView();
+    } catch (error) {
+        console.error("Fehler beim Umschalten des Status:", error);
+        showNotification("Status konnte nicht geändert werden.", "error");
+    }
+}
+
+if (adminMenuContainer) {
+    adminMenuContainer.addEventListener('click', e => {
+        const target = e.target.closest('.toggle-sold-out-btn, .make-available-btn');
+        if (target) {
+            const menuItem = target.closest('.admin-menu-item');
+            const itemId = menuItem.dataset.id;
+            toggleSoldOutStatus(itemId);
+        }
+    });
+}
+
+function updateCustomerMenuView() {
+    document.querySelectorAll('#order-section .menu-item').forEach(itemElem => {
+        const itemId = itemElem.dataset.id;
+        const isSoldOut = currentMenuStatus[itemId] === true;
+        itemElem.classList.toggle('sold-out', isSoldOut);
+    });
+}
+
+topupBalanceBtn.addEventListener('click', handleTopUpBalance);
+payWithBalanceBtn.addEventListener('click', handlePayWithBalance);
 backToLoginFromSentLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(loginView); });
 
 hamburgerMenu.addEventListener('click', () => {
@@ -243,6 +416,47 @@ document.addEventListener('click', (e) => {
     }
 });
 
+const validateInput = (inputElement, errorElement, fieldName) => {
+    const value = inputElement.value.trim();
+    const minLength = parseInt(inputElement.getAttribute('minlength'), 10);
+    const maxLength = parseInt(inputElement.getAttribute('maxlength'), 10);
+    let isValid = true;
+    let errorMessage = '';
+
+    if (value.length > 0 && value.length < minLength) {
+        isValid = false;
+        errorMessage = `${fieldName} muss mindestens ${minLength} Zeichen lang sein.`;
+    } else if (value.length > maxLength) {
+        isValid = false;
+        errorMessage = `${fieldName} darf maximal ${maxLength} Zeichen lang sein.`;
+    }
+
+    if (!isValid) {
+        errorElement.textContent = errorMessage;
+        errorElement.style.display = 'block';
+        inputElement.classList.add('invalid');
+    } else {
+        errorElement.style.display = 'none';
+        inputElement.classList.remove('invalid');
+    }
+    return isValid;
+};
+
+const setupInputValidation = () => {
+    registerUsernameInput.addEventListener('input', () => {
+        validateInput(registerUsernameInput, usernameErrorMessage, 'Der Benutzername');
+    });
+    profileUsername.addEventListener('input', () => {
+        validateInput(profileUsername, usernameProfileError, 'Der Benutzername');
+    });
+    profileFirstname.addEventListener('input', () => {
+        validateInput(profileFirstname, firstnameProfileError, 'Der Vorname');
+    });
+    profileLastname.addEventListener('input', () => {
+        validateInput(profileLastname, lastnameProfileError, 'Der Nachname');
+    });
+};
+
 function setupCustomSelect(selectElement) {
     const trigger = selectElement.querySelector('.custom-select-trigger');
     const options = selectElement.querySelector('.custom-options');
@@ -252,12 +466,11 @@ function setupCustomSelect(selectElement) {
     });
 
     options.addEventListener('click', (e) => {
-        if (e.target.classList.contains('custom-option')) {
+        if (e.target.classList.contains('custom-option') && !e.target.classList.contains('disabled')) {
             const currentlySelected = options.querySelector('.selected');
             if (currentlySelected) {
                 currentlySelected.classList.remove('selected');
             }
-            
             e.target.classList.add('selected');
             trigger.querySelector('span').textContent = e.target.textContent;
             selectElement.setAttribute('data-value', e.target.dataset.value);
@@ -269,30 +482,27 @@ function setupCustomSelect(selectElement) {
 
 function setupDaySelector() {
     const today = new Date();
-    const currentDayIndex = today.getDay(); // 0=So, 1=Mo, ..., 6=Sa
-
+    const currentDayIndex = today.getDay();
     const buttons = pickupDaySelector.querySelectorAll('button');
     let defaultDaySet = false;
 
     buttons.forEach(button => {
         const buttonDay = button.dataset.day;
         const buttonDayIndex = dayIndexMapping[buttonDay];
-        
-        // At weekend, all days are for the next week and enabled
-        if (currentDayIndex === 6 || currentDayIndex === 0) {
-            button.disabled = false;
-            // Set Monday as default
+        button.classList.remove('active');
+        button.disabled = false;
+
+        if (currentDayIndex > 5 || currentDayIndex === 0) {
             if (buttonDayIndex === 1 && !defaultDaySet) {
                 button.classList.add('active');
                 selectedPickupDay = buttonDay;
                 defaultDaySet = true;
             }
-        } else { // During the week
+        } else {
             if (buttonDayIndex < currentDayIndex) {
                 button.disabled = true;
             } else {
-                button.disabled = false;
-                if (buttonDayIndex === currentDayIndex && !defaultDaySet) {
+                if (!defaultDaySet) {
                     button.classList.add('active');
                     selectedPickupDay = buttonDay;
                     defaultDaySet = true;
@@ -300,7 +510,9 @@ function setupDaySelector() {
             }
         }
     });
-    renderCart();
+
+    populateHours();
+    populateMinutes();
 }
 
 function setupOrderTabs() {
@@ -312,7 +524,6 @@ function setupOrderTabs() {
                     const day = e.target.dataset.day;
                     tabs.querySelector('.active')?.classList.remove('active');
                     e.target.classList.add('active');
-
                     if (section.id === 'user-orders-section') {
                         renderUserOrders(day);
                     } else if (section.id === 'management-orders-section') {
@@ -331,6 +542,13 @@ pickupDaySelector.addEventListener('click', (e) => {
         });
         e.target.classList.add('active');
         selectedPickupDay = e.target.dataset.day;
+
+        populateHours();
+        customHourSelect.setAttribute('data-value', '');
+        customHourSelect.querySelector('span').textContent = '--';
+        customMinuteSelect.setAttribute('data-value', '');
+        customMinuteSelect.querySelector('span').textContent = '--';
+        populateMinutes();
         renderCart();
     }
 });
@@ -353,7 +571,6 @@ const showNotification = (message, type = 'error') => {
     document.body.appendChild(notification);
 
     setTimeout(() => notification.classList.add('show'), 10);
-
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 500);
@@ -383,29 +600,55 @@ const handleGoogleAuth = async () => {
         const userDocSnap = await getDoc(userDocRef);
 
         if (!userDocSnap.exists()) {
-            await setDoc(userDocRef, {
-                username: user.displayName,
-                email: user.email,
-                createdAt: new Date(),
-                firstName: "", 
-                lastName: "", 
-                usernameChangesThisMonth: 0,
-                usernameLastChangeMonth: "none", 
-                firstNameChangeCount: 0,
-                lastNameChangeCount: 0,
-                isCoAdmin: false, 
-                isAdmin: false, 
-                isBlocked: false
-            });
-            showNotification(`Willkommen, ${user.displayName}! Dein Konto wurde erstellt.`, 'success');
+            switchModalView(googleUsernameView);
+            googleUsernameInput.value = user.displayName || '';
+            googleAgbCheckbox.checked = false;
+            validateGoogleRegistration();
+
+            googleUsernameSubmitBtn.onclick = async () => {
+                const username = googleUsernameInput.value.trim();
+                if (username.length < 5 || !googleAgbCheckbox.checked) {
+                    showNotification("Bitte gib einen gültigen Benutzernamen an und akzeptiere die AGB.", "error");
+                    return;
+                }
+                setButtonLoading(googleUsernameSubmitBtn, true);
+                try {
+                    await updateProfile(user, { displayName: username });
+                    await setDoc(userDocRef, {
+                        username: username,
+                        email: user.email,
+                        createdAt: new Date(),
+                        firstName: result.user.displayName.split(' ')[0] || "",
+                        lastName: result.user.displayName.split(' ').slice(1).join(' ') || "",
+                        usernameChangesThisMonth: 0,
+                        usernameLastChangeMonth: "none",
+                        firstNameChangeCount: 0,
+                        lastNameChangeCount: 0,
+                        isCoAdmin: false,
+                        isAdmin: false,
+                        isBlocked: false,
+                        isVerified: false,
+                        balance: 0,
+                        favorites: []
+                    });
+                    closeModal();
+                    showNotification(`Willkommen, ${username}! Dein Konto wurde erfolgreich erstellt.`, 'success');
+                } catch (dbError) {
+                    showNotification('Fehler beim Speichern des Profils: ' + dbError.message, "error");
+                } finally {
+                    setButtonLoading(googleUsernameSubmitBtn, false);
+                }
+            };
         } else {
             showNotification(`Willkommen zurück, ${user.displayName}!`, 'success');
+            closeModal();
         }
-        closeModal();
     } catch (error) {
         console.error("Google Authentifizierungsfehler:", error);
         if (error.code === 'auth/popup-closed-by-user') {
-            showNotification('Die Anmeldung wurde abgebrochen.', 'error');
+            // No error shown
+        } else if (error.code === 'auth/account-exists-with-different-credential') {
+            showNotification('Ein Konto mit dieser E-Mail existiert bereits. Bitte melde dich normal an.');
         } else {
             showNotification('Ein Fehler bei der Google-Anmeldung ist aufgetreten.', 'error');
         }
@@ -440,14 +683,26 @@ const showOrderPage = async () => {
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
             currentUserProfile = userDocSnap.data();
+
+            if (ACCOUNT_VERIFICATION_ENABLED && !currentUserProfile.isVerified) {
+                showNotification("Bitte verifiziere zuerst dein Konto, um bestellen zu können.", "error");
+                showProfilePage();
+                return;
+            }
+
             if (currentUserProfile.isBlocked) {
-                showNotification("Dein Konto wurde für Bestellungen gesperrt.");
+                showNotification("Dein Konto wurde für Bestellungen gesperrt. Falls du Einwände hast, wende dich bitte an einen Admin oder schreibe uns eine E-Mail.");
                 showHomePage();
                 return;
             }
         }
         showPage(orderSection);
+        await fetchMenuStatus();
+        updateCustomerMenuView();
         renderCart();
+        renderFavorites();
+        updateFavoriteIcons();
+        checkAndDisplayRestverkauf();
     } else {
         openModal();
     }
@@ -456,21 +711,23 @@ const showOrderPage = async () => {
 const showUserOrdersPage = () => {
     if (auth.currentUser) {
         showPage(userOrdersSection);
-        const today = new Date().getDay(); // 0-6
+        const today = new Date().getDay();
         const defaultDay = (today === 0 || today === 6) ? "Montag" : dayMapping[today];
         const tabs = userOrdersSection.querySelector('.order-day-tabs');
         tabs.querySelector('.active')?.classList.remove('active');
         tabs.querySelector(`[data-day="${defaultDay}"]`).classList.add('active');
         renderUserOrders(defaultDay);
+        renderArchivedOrders();
     } else {
         openModal();
     }
+    setupDaySelector();
 };
 
 const showManagementOrdersPage = () => {
     if (auth.currentUser) {
         showPage(managementOrdersSection);
-        const today = new Date().getDay(); // 0-6
+        const today = new Date().getDay();
         const defaultDay = (today === 0 || today === 6) ? "Montag" : dayMapping[today];
         const tabs = managementOrdersSection.querySelector('.order-day-tabs');
         tabs.querySelector('.active')?.classList.remove('active');
@@ -481,21 +738,17 @@ const showManagementOrdersPage = () => {
     }
 };
 
-
 const resetCheckoutModalState = () => {
-    // Verstecke den Stripe-Container und zeige die initiale Ansicht
     paymentElementContainer.style.display = 'none';
     checkoutInitialView.style.display = 'block';
 
-    // Setze den "Mit Karte zahlen"-Button zurück (Spinner, etc.)
     const btnText = startOnlinePaymentBtn.querySelector('.btn-text');
     const btnSpinner = startOnlinePaymentBtn.querySelector('.btn-spinner');
-    
+
     startOnlinePaymentBtn.disabled = false;
     if (btnText) btnText.style.display = 'inline';
     if (btnSpinner) btnSpinner.style.display = 'none';
 
-    // Verstecke eventuelle Fehlermeldungen
     paymentMessage.textContent = '';
     paymentMessage.style.display = 'none';
 };
@@ -507,17 +760,15 @@ const showAdminToolsPage = () => {
         showPage(adminToolsSection);
         renderReportedOrders();
         renderAdminStats();
+        renderAdminMenu();
+        renderRestverkaufAdmin();
     } else {
         openModal();
     }
 };
 
 const showProfilePage = async () => {
-
-     window.scrollTo({
-        top: 0,
-        behavior: 'smooth' 
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (auth.currentUser) {
         showPage(profileSection);
@@ -528,9 +779,13 @@ const showProfilePage = async () => {
 
         if (userDocSnap.exists()) {
             const data = userDocSnap.data();
+            currentUserProfile = data;
             profileUsername.value = auth.currentUser.displayName || '';
             profileFirstname.value = data.firstName || '';
             profileLastname.value = data.lastName || '';
+
+            const currentBalance = data.balance || 0;
+            profileBalance.textContent = `${currentBalance.toFixed(2).replace('.', ',')} €`;
 
             const currentMonth = new Date().toISOString().slice(0, 7);
             const changesThisMonth = data.usernameLastChangeMonth === currentMonth ? data.usernameChangesThisMonth : 0;
@@ -539,11 +794,76 @@ const showProfilePage = async () => {
             const firstNameChanges = data.firstNameChangeCount || 0;
             const lastNameChanges = data.lastNameChangeCount || 0;
             fullnameLimitInfo.textContent = `Vorname kann noch ${2 - firstNameChanges} Mal, Nachname noch ${2 - lastNameChanges} Mal geändert werden.`;
+
+            const verificationCard = document.getElementById('verification-card');
+            const verificationStatusDisplay = document.getElementById('verification-status-display');
+            if (ACCOUNT_VERIFICATION_ENABLED) {
+                if (data.isVerified) {
+                    verificationCard.style.display = 'none';
+                    verificationStatusDisplay.innerHTML = `
+                        <h2>Kontostatus</h2>
+                        <p style="color: var(--success); font-weight: 600;">Dein Konto ist verifiziert. <i class="fa-solid fa-check-circle"></i></p>
+                    `;
+                    verificationStatusDisplay.style.display = 'block';
+                } else {
+                    verificationCard.style.display = 'block';
+                    verificationStatusDisplay.style.display = 'none';
+                }
+            } else {
+                verificationCard.style.display = 'none';
+                verificationStatusDisplay.style.display = 'none';
+            }
         }
     } else {
         openModal();
     }
 };
+
+async function checkForTopUpSuccess() {
+    const params = new URLSearchParams(window.location.search);
+    const user = auth.currentUser;
+
+    if (params.has('topup_success') && params.has('session_id') && user) {
+        const sessionId = params.get('session_id');
+
+        if (localStorage.getItem('last_session_id') === sessionId) {
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${backendUrl}/get-checkout-session?sessionId=${sessionId}`);
+            const sessionData = await response.json();
+
+            if (sessionData.client_reference_id !== user.uid) {
+                throw new Error("Session-Benutzer stimmt nicht mit angemeldetem Benutzer überein.");
+            }
+
+            const amountAdded = sessionData.amount_total / 100;
+            const userRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userRef);
+            const currentBalance = userDoc.data().balance || 0;
+            const newBalance = currentBalance + amountAdded;
+
+            await updateDoc(userRef, { balance: newBalance });
+
+            localStorage.setItem('last_session_id', sessionId);
+            showNotification(`Dein Guthaben wurde erfolgreich um ${amountAdded.toFixed(2)} € aufgeladen.`, 'success');
+
+            if (profileSection.style.display !== 'none') {
+                showProfilePage();
+            }
+        } catch (error) {
+            console.error("Fehler beim Verarbeiten der Top-Up-Session:", error);
+            showNotification("Es gab ein Problem bei der Aktualisierung Ihres Guthabens. Bitte kontaktieren Sie den Support.", "error");
+        } finally {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    } else if (params.has('topup_canceled')) {
+        showNotification("Die Aufladung wurde abgebrochen.", "error");
+        window.history.replaceState(null, '', window.location.pathname);
+    }
+}
 
 const openModal = () => {
     loginView.style.display = 'block';
@@ -552,8 +872,7 @@ const openModal = () => {
     passwordResetView.style.display = 'none';
     passwordResetInitialView.style.display = 'block';
     passwordResetSentView.style.display = 'none';
-
-    authModal.style.display = 'flex'; 
+    authModal.style.display = 'flex';
 };
 
 const closeModal = () => { authModal.style.display = 'none'; };
@@ -567,28 +886,43 @@ const switchModalView = (viewToShow) => {
 const populateMinutes = (isFourteen = false) => {
     customMinuteOptions.innerHTML = '';
     const minutes = isFourteen ? ['00'] : ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
-    
+    const now = new Date();
+    const currentDayIndex = now.getDay();
+    const isToday = selectedPickupDay === dayMapping[currentDayIndex];
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const selectedHour = parseInt(customHourSelect.getAttribute('data-value'), 10);
+
     minutes.forEach(m => {
         const optionDiv = document.createElement('div');
         optionDiv.classList.add('custom-option');
         optionDiv.dataset.value = m;
         optionDiv.textContent = m;
+        if (isToday && selectedHour === currentHour && parseInt(m, 10) < currentMinute) {
+            optionDiv.classList.add('disabled');
+        }
         customMinuteOptions.appendChild(optionDiv);
     });
 };
 
 const populateHours = () => {
     customHourOptions.innerHTML = '';
+    const now = new Date();
+    const currentDayIndex = now.getDay();
+    const isToday = selectedPickupDay === dayMapping[currentDayIndex];
+    const currentHour = now.getHours();
+
     for (let h = 11; h <= 14; h++) {
         const optionDiv = document.createElement('div');
         optionDiv.classList.add('custom-option');
         optionDiv.dataset.value = h;
         optionDiv.textContent = h;
+        if (isToday && h < currentHour) {
+            optionDiv.classList.add('disabled');
+        }
         customHourOptions.appendChild(optionDiv);
     }
 };
-
-// In app.js, die komplette renderCart Funktion
 
 const renderCart = () => {
     cartItemsList.innerHTML = '';
@@ -596,30 +930,34 @@ const renderCart = () => {
     const maxOrderValueNotice = document.getElementById('max-order-value-notice');
     const selectDayNotice = document.getElementById('select-day-notice');
     const selectTimeNotice = document.getElementById('select-time-notice');
-
     profileCompletionNotice.innerHTML = '';
 
     let totalPrice = 0;
     const itemIds = Object.keys(cart);
 
-    if (itemIds.length === 0) {
+    if (itemIds.length === 0 || (itemIds.length === 1 && itemIds[0] === 'isRestverkauf')) {
         cartItemsList.appendChild(cartPlaceholder);
         cartPlaceholder.style.display = 'block';
     } else {
         cartPlaceholder.style.display = 'none';
         itemIds.forEach(id => {
+            if (id === 'isRestverkauf') return;
             const item = cart[id];
             const itemTotal = item.price * item.quantity;
             totalPrice += itemTotal;
-
             const li = document.createElement('li');
             li.className = 'cart-item';
             li.innerHTML = `
                 <div class="cart-item-details">
-                    <div class="cart-item-name">${item.quantity}x ${item.name}</div>
-                    <div class="cart-item-price">${item.price.toFixed(2).replace('.', ',')} €</div>
+                    <span class="cart-item-name">${item.name}</span>
+                    <span class="cart-item-price">${itemTotal.toFixed(2).replace('.', ',')} €</span>
                 </div>
-                <div class="cart-item-total">${itemTotal.toFixed(2).replace('.', ',')} €</div>
+                <div class="cart-item-actions">
+                    <button class="cart-quantity-btn" data-id="${id}" data-action="minus">-</button>
+                    <span class="cart-quantity">${item.quantity}</span>
+                    <button class="cart-quantity-btn" data-id="${id}" data-action="plus">+</button>
+                    <button class="cart-remove-btn" data-id="${id}"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
             `;
             cartItemsList.appendChild(li);
         });
@@ -637,18 +975,17 @@ const renderCart = () => {
     const hour = customHourSelect.getAttribute('data-value');
     const minute = customMinuteSelect.getAttribute('data-value');
 
-    if (totalPrice === 0) {
-        isButtonDisabled = true;
-    }
+    if (totalPrice === 0) isButtonDisabled = true;
 
-    if (!selectedPickupDay) {
-        dayNoticeVisible = true;
-        isButtonDisabled = true;
-    }
-
-    if (!hour || !minute) {
-        timeNoticeVisible = true;
-        isButtonDisabled = true;
+    if (!cart.isRestverkauf) {
+        if (!selectedPickupDay) {
+            dayNoticeVisible = true;
+            isButtonDisabled = true;
+        }
+        if (!hour || !minute) {
+            timeNoticeVisible = true;
+            isButtonDisabled = true;
+        }
     }
 
     if (totalPrice > 150) {
@@ -662,12 +999,9 @@ const renderCart = () => {
             profileCompletionNotice.innerHTML = `
                 Vervollständige dein Profil für Bestellungen über 10,00 €.
                 <br>
-                <button id="go-to-profile-from-cart-btn" class="profile-notice-btn">
-                    Zum Profil
-                </button>
+                <button id="go-to-profile-from-cart-btn" class="profile-notice-btn">Zum Profil</button>
             `;
             document.getElementById('go-to-profile-from-cart-btn')?.addEventListener('click', showProfilePage);
-            // --- ENDE DER ANPASSUNG ---
             profileNoticeVisible = true;
             isButtonDisabled = true;
         }
@@ -680,34 +1014,71 @@ const renderCart = () => {
     checkoutBtn.disabled = isButtonDisabled;
 };
 
+cartItemsList.addEventListener('click', (e) => {
+    const quantityBtn = e.target.closest('.cart-quantity-btn');
+    const removeBtn = e.target.closest('.cart-remove-btn');
+
+    if (quantityBtn) {
+        const id = quantityBtn.dataset.id;
+        const action = quantityBtn.dataset.action;
+        handleCartAction(id, action);
+    }
+
+    if (removeBtn) {
+        const id = removeBtn.dataset.id;
+        delete cart[id];
+        const allItemInstances = document.querySelectorAll(`.menu-item[data-id="${id}"]`);
+        allItemInstances.forEach(instance => {
+            const quantityDisplay = instance.querySelector('.quantity');
+            if (quantityDisplay) quantityDisplay.textContent = 0;
+        });
+        renderCart();
+    }
+});
+
+if (userSearchBtn) userSearchBtn.addEventListener('click', handleUserSearch);
+
+if (userSearchResultsContainer) {
+    userSearchResultsContainer.addEventListener('click', e => {
+        const viewProfileButton = e.target.closest('.view-profile-btn');
+        if (viewProfileButton) {
+            const userId = viewProfileButton.dataset.userId;
+            openUserDetailModal(userId);
+        }
+    });
+}
+
 const resetOrder = () => {
     cart = {};
-    setupDaySelector(); // Resets day to default
+    setupDaySelector();
     customHourSelect.setAttribute('data-value', '');
     customHourSelect.querySelector('span').textContent = '--';
     populateMinutes();
     customMinuteSelect.setAttribute('data-value', '');
     customMinuteSelect.querySelector('span').textContent = '--';
-
+    document.querySelector('.pickup-day-picker').style.display = 'block';
+    document.querySelector('.pickup-time-picker').style.display = 'block';
+    document.getElementById('profile-completion-notice').style.display = 'none';
     document.querySelectorAll('.menu-item .quantity').forEach(q => {
         q.textContent = '0';
     });
     renderCart();
 };
 
-// Ein globaler Platzhalter für unsere "unsubscribe" Funktion
+archivedOrdersListContainer.addEventListener('click', async (e) => {
+    const target = e.target.closest('.reorder-btn');
+    if (!target) return;
+    const orderId = target.dataset.id;
+    if (orderId) handleReorder(orderId);
+});
+
 let userOrdersListener = null;
 
 const renderUserOrders = (day) => {
     const user = auth.currentUser;
     if (!user || !day) return;
-
     userOrdersListContainer.innerHTML = "<p>Lade Bestellungen...</p>";
-
-    // Wenn schon ein alter Listener für einen anderen Tag läuft, beenden wir ihn zuerst.
-    if (userOrdersListener) {
-        userOrdersListener(); 
-    }
+    if (userOrdersListener) userOrdersListener();
 
     const q = query(
         collection(db, "orders"),
@@ -716,32 +1087,28 @@ const renderUserOrders = (day) => {
         where("pickupDay", "==", day)
     );
 
-    // Hier kommt die Magie: onSnapshot statt getDocs
     userOrdersListener = onSnapshot(q, (querySnapshot) => {
         const orders = [];
         querySnapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
-
-        // Sortiere nach Abholzeit
-        orders.sort((a, b) => a.pickupTime.localeCompare(b.pickupTime));
+        orders.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
         if (orders.length === 0) {
             userOrdersListContainer.innerHTML = `<p>Du hast für ${day} keine offenen Bestellungen.</p>`;
             return;
         }
 
-        userOrdersListContainer.innerHTML = ""; // Liste vor dem Neuzeichnen leeren
+        userOrdersListContainer.innerHTML = "";
         orders.forEach(order => {
             const orderId = order.id;
             const orderDate = order.timestamp.toDate();
             const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
-
             const itemsHtml = Object.values(order.items).map(item =>
                 `<li><span>${item.quantity}x ${item.name}</span> <span>${(item.price * item.quantity).toFixed(2).replace('.', ',')} €</span></li>`
             ).join('');
 
             const orderCard = document.createElement('div');
             orderCard.className = 'order-card';
-            if (order.paymentMethod === 'Online-Zahlung') orderCard.classList.add('paid');
+            if (order.isPaid) orderCard.classList.add('paid');
             if (order.isPrepared) orderCard.classList.add('prepared');
 
             orderCard.innerHTML = `
@@ -755,33 +1122,26 @@ const renderUserOrders = (day) => {
                         <strong>${order.pickupTime} Uhr</strong>
                     </div>
                 </div>
-                <div class="order-items-container">
-                     <ul class="order-items-list">${itemsHtml}</ul>
-                </div>
+                <div class="order-items-container"><ul class="order-items-list">${itemsHtml}</ul></div>
                 <div class="order-footer">
-                    <div class="order-total">
-                        Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €
-                    </div>
+                    <div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div>
                     <button class="received-order-btn" data-id="${orderId}">Bestellung erhalten</button>
                 </div>
             `;
-            
-            // Die Status-Badges bleiben genau gleich
+
             const headerInfo = orderCard.querySelector('.order-header-info');
-            if (order.paymentMethod === 'Online-Zahlung') {
+            if (order.isPaid) {
                 const paymentStatusBadge = document.createElement('span');
                 paymentStatusBadge.className = 'payment-status-badge paid';
                 paymentStatusBadge.textContent = 'Bezahlt';
                 headerInfo.appendChild(paymentStatusBadge);
             }
-    
             if (order.isPrepared) {
                 const preparedStatusBadge = document.createElement('span');
                 preparedStatusBadge.className = 'payment-status-badge prepared';
-                preparedStatusBadge.textContent = 'Vorbereitet';
+                preparedStatusBadge.textContent = 'Abholbereit';
                 headerInfo.appendChild(preparedStatusBadge);
             }
-
             userOrdersListContainer.appendChild(orderCard);
         });
     }, (error) => {
@@ -795,17 +1155,14 @@ const renderManagementOrders = async (day) => {
     managementOrdersListContainer.innerHTML = "<p>Lade Bestellungen...</p>";
 
     const q = query(
-        collection(db, "orders"), 
-        where("adminCompleted", "==", false), 
+        collection(db, "orders"),
+        where("adminCompleted", "==", false),
         where("isReported", "==", false),
         where("pickupDay", "==", day)
     );
     const querySnapshot = await getDocs(q);
-
     const orders = [];
     querySnapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
-
-    // Sort by pickup time
     orders.sort((a, b) => a.pickupTime.localeCompare(b.pickupTime));
 
     if (orders.length === 0) {
@@ -819,16 +1176,13 @@ const renderManagementOrders = async (day) => {
         const orderDate = order.timestamp.toDate();
         const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
         const fullName = [order.userFirstName, order.userLastName].filter(Boolean).join(' ') || order.userName;
-
-        const itemsHtml = Object.values(order.items).map(item => 
+        const itemsHtml = Object.values(order.items).map(item =>
             `<li><span>${item.quantity}x ${item.name}</span> <span>${(item.price * item.quantity).toFixed(2).replace('.', ',')} €</span></li>`
         ).join('');
 
         const orderCard = document.createElement('div');
         orderCard.className = `order-card ${order.isPrepared ? 'prepared' : ''}`;
-        if (order.paymentMethod === 'Online-Zahlung') {
-            orderCard.classList.add('paid');
-        }
+        if (order.isPaid) orderCard.classList.add('paid');
 
         orderCard.innerHTML = `
             <div class="order-header">
@@ -838,7 +1192,7 @@ const renderManagementOrders = async (day) => {
                 </div>
                 <div class="order-user-info">
                     <span>Bestellt von:</span>
-                    <strong>${fullName}</strong> 
+                    <strong>${fullName}</strong>
                 </div>
                 <div class="order-pickup-time">
                     <span>Abholung um:</span>
@@ -851,29 +1205,24 @@ const renderManagementOrders = async (day) => {
                  <ul class="order-items-list">${itemsHtml}</ul>
             </div>
             <div class="order-footer">
-                 <div class="order-total">
-                    Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €
-                </div>
+                 <div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div>
                 <div class="order-actions">
                     <button class="report-order-btn danger-button" data-id="${orderId}">Melden</button>
                     <button class="prepare-order-btn" data-id="${orderId}" ${order.isPrepared ? 'disabled' : ''}>
                         ${order.isPrepared ? 'Vorbereitet' : 'Vorbereiten'}
                     </button>
-                    <button class="finish-order-btn" data-id="${orderId}">
-                        <i class="fa-solid fa-check"></i> Fertig
-                    </button>
+                    <button class="finish-order-btn" data-id="${orderId}"><i class="fa-solid fa-check"></i> Fertig</button>
                 </div>
             </div>
         `;
 
-        if (order.paymentMethod === 'Online-Zahlung') {
+        if (order.isPaid) {
             const headerInfo = orderCard.querySelector('.order-header-info');
             const paymentStatusBadge = document.createElement('span');
             paymentStatusBadge.className = 'payment-status-badge paid';
-            paymentStatusBadge.textContent = 'Online Bezahlt';
+            paymentStatusBadge.textContent = 'Bezahlt';
             headerInfo.appendChild(paymentStatusBadge);
         }
-
         managementOrdersListContainer.appendChild(orderCard);
     });
 };
@@ -891,10 +1240,24 @@ const renderAdminStats = async () => {
         );
         const openOrdersSnapshot = await getDocs(openOrdersQuery);
         statsOpenOrdersCount.textContent = openOrdersSnapshot.size;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const todayOrdersQuery = query(
+            collection(db, "orders"),
+            where("timestamp", ">=", today),
+            where("timestamp", "<", tomorrow)
+        );
+        const todayOrdersSnapshot = await getDocs(todayOrdersQuery);
+        statsTodayOrdersCount.textContent = todayOrdersSnapshot.size;
     } catch (error) {
         console.error("Fehler beim Laden der Admin-Statistiken:", error);
         statsUserCount.textContent = "Fehler";
         statsOpenOrdersCount.textContent = "Fehler";
+        statsTodayOrdersCount.textContent = "Fehler";
     }
 };
 
@@ -902,7 +1265,7 @@ const renderReportedOrders = async () => {
     reportedOrdersListContainer.innerHTML = "<p>Lade gemeldete Bestellungen...</p>";
 
     const q = query(
-        collection(db, "orders"), 
+        collection(db, "orders"),
         where("isReported", "==", true),
         orderBy("timestamp", "desc")
     );
@@ -920,7 +1283,6 @@ const renderReportedOrders = async () => {
         const orderDate = order.timestamp.toDate();
         const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
         const fullName = [order.userFirstName, order.userLastName].filter(Boolean).join(' ') || order.userName;
-
         const compactItem = document.createElement('div');
         compactItem.className = 'reported-order-item-compact';
         compactItem.dataset.id = orderId;
@@ -929,9 +1291,7 @@ const renderReportedOrders = async () => {
                 <strong>Bestellnr: ${order.orderNumber}</strong>
                 <span>Von: ${fullName}</span>
             </div>
-            <div class="reported-order-date">
-                <span>${formattedDate}</span>
-            </div>
+            <div class="reported-order-date"><span>${formattedDate}</span></div>
         `;
         reportedOrdersListContainer.appendChild(compactItem);
     }
@@ -940,7 +1300,6 @@ const renderReportedOrders = async () => {
 const openReportedOrderDetailModal = async (orderId) => {
     const orderRef = doc(db, "orders", orderId);
     const orderSnap = await getDoc(orderRef);
-
     if (!orderSnap.exists()) {
         showNotification("Bestellung nicht gefunden.", "error");
         return;
@@ -951,11 +1310,10 @@ const openReportedOrderDetailModal = async (orderId) => {
     const userData = userDocSnap.exists() ? userDocSnap.data() : null;
     const orderDate = order.timestamp.toDate();
     const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
-
-    const itemsHtml = Object.values(order.items).map(item => 
+    const itemsHtml = Object.values(order.items).map(item =>
         `<li><span>${item.quantity}x ${item.name}</span> <span>${(item.price * item.quantity).toFixed(2).replace('.', ',')} €</span></li>`
     ).join('');
-    
+
     reportedOrderDetailContent.innerHTML = `
         <div class="order-header">
             <div class="order-header-info">
@@ -967,14 +1325,8 @@ const openReportedOrderDetailModal = async (orderId) => {
                 <strong>${order.pickupTime} Uhr</strong>
             </div>
         </div>
-        <div class="order-items-container">
-             <ul class="order-items-list">${itemsHtml}</ul>
-        </div>
-        <div class="order-footer">
-            <div class="order-total">
-                Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €
-            </div>
-        </div>
+        <div class="order-items-container"><ul class="order-items-list">${itemsHtml}</ul></div>
+        <div class="order-footer"><div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div></div>
         ${userData ? `
         <div class="reported-user-details">
             <h4>Nutzerinformationen</h4>
@@ -992,6 +1344,80 @@ const openReportedOrderDetailModal = async (orderId) => {
     reportedOrderDetailModal.style.display = 'flex';
 };
 
+const renderArchivedOrders = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    archivedOrdersListContainer.innerHTML = "<p>Lade archivierte Bestellungen...</p>";
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoTimestamp = Timestamp.fromDate(sevenDaysAgo);
+
+    const q = query(
+        collection(db, "orders"),
+        where("userId", "==", user.uid),
+        where("userAcknowledged", "==", true),
+        where("timestamp", ">=", sevenDaysAgoTimestamp),
+        orderBy("timestamp", "desc")
+    );
+
+    const querySnapshot = await getDocs(q);
+    const orders = [];
+    querySnapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+
+    if (orders.length === 0) {
+        archivedOrdersListContainer.innerHTML = `<p>Keine archivierten Bestellungen in den letzten 7 Tagen gefunden.</p>`;
+        return;
+    }
+
+    archivedOrdersListContainer.innerHTML = "";
+    orders.forEach(order => {
+        const orderDate = order.timestamp.toDate();
+        const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
+        const itemsHtml = Object.values(order.items).map(item => `<li><span>${item.quantity}x ${item.name}</span></li>`).join('');
+
+        const orderCard = document.createElement('div');
+        orderCard.className = 'order-card archived';
+        orderCard.innerHTML = `
+            <div class="order-header">
+                <div class="order-header-info">
+                    <strong>Bestellnr: ${order.orderNumber}</strong>
+                    <span>Bestellt am: ${formattedDate}</span>
+                </div>
+                <div class="order-pickup-time">
+                    <span>Abgeholt am ${order.pickupDay} um:</span>
+                    <strong>${order.pickupTime} Uhr</strong>
+                </div>
+            </div>
+            <div class="order-items-container"><ul class="order-items-list">${itemsHtml}</ul></div>
+            <div class="order-footer">
+                <div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div>
+                <div class="order-actions"><button class="reorder-btn cta-button" data-id="${order.id}">Erneut bestellen</button></div>
+            </div>
+        `;
+        archivedOrdersListContainer.appendChild(orderCard);
+    });
+};
+
+async function handleReorder(orderId) {
+    const orderRef = doc(db, "orders", orderId);
+    try {
+        const orderSnap = await getDoc(orderRef);
+        if (!orderSnap.exists()) {
+            showNotification("Die ursprüngliche Bestellung konnte nicht gefunden werden.", "error");
+            return;
+        }
+        const orderData = orderSnap.data();
+        cart = orderData.items;
+        showNotification("Die Artikel wurden in deinen Warenkorb gelegt!", "success");
+        showOrderPage();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+        console.error("Fehler beim erneuten Bestellen: ", error);
+        showNotification("Ein Fehler ist aufgetreten. Die Artikel konnten nicht in den Warenkorb gelegt werden.", "error");
+    }
+}
+
 onAuthStateChanged(auth, async (user) => {
     const optionalLinks = [userProfileLink, userOrdersLink, managementOrdersLink, adminToolsLink];
     optionalLinks.forEach(link => link.style.display = 'none');
@@ -1000,29 +1426,36 @@ onAuthStateChanged(auth, async (user) => {
     if (user && user.emailVerified) {
         authButton.textContent = 'Abmelden';
         authButton.onclick = () => signOut(auth);
-
         userProfileLink.textContent = user.displayName || "Profil";
         userProfileLink.style.display = 'block';
         userOrdersLink.style.display = 'block';
 
         const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
+        onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                currentUserProfile = docSnap.data();
+                if (profileSection.style.display !== 'none') {
+                    const balance = currentUserProfile.balance || 0;
+                    profileBalance.textContent = `${balance.toFixed(2).replace('.', ',')} €`;
+                }
+                userProfileLink.textContent = user.displayName || "Profil";
+                managementOrdersLink.style.display = (currentUserProfile.isCoAdmin || currentUserProfile.isAdmin) ? 'block' : 'none';
+                adminToolsLink.style.display = currentUserProfile.isAdmin ? 'block' : 'none';
+            }
+        });
 
+        await checkForTopUpSuccess();
+        const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
             currentUserProfile = userDocSnap.data();
-            if (currentUserProfile.isCoAdmin === true || currentUserProfile.isAdmin === true) {
-                managementOrdersLink.style.display = 'block';
-            }
-            if (currentUserProfile.isAdmin === true) {
-                adminToolsLink.style.display = 'block';
-            }
+            managementOrdersLink.style.display = (currentUserProfile.isCoAdmin || currentUserProfile.isAdmin) ? 'block' : 'none';
+            adminToolsLink.style.display = currentUserProfile.isAdmin ? 'block' : 'none';
         }
     } else {
         const wasJustLoggedOut = authButton.textContent === 'Abmelden';
         if (wasJustLoggedOut) {
             showNotification("Du wurdest erfolgreich abgemeldet.", "success");
         }
-        
         currentUserProfile = null;
         authButton.textContent = 'Anmelden';
         authButton.onclick = openModal;
@@ -1031,26 +1464,82 @@ onAuthStateChanged(auth, async (user) => {
         showHomePage();
     }
     renderCart();
+    renderFavorites();
+    updateFavoriteIcons();
 });
+
+async function handleTopUpBalance() {
+    const user = auth.currentUser;
+    if (!user) {
+        showNotification("Bitte melde dich an, um Guthaben aufzuladen.", "error");
+        return;
+    }
+
+    const amount = parseFloat(topupAmountInput.value);
+    const currentBalance = currentUserProfile.balance || 0;
+    topupErrorMessage.style.display = 'none';
+
+    if (isNaN(amount) || amount < 5) {
+        topupErrorMessage.textContent = "Bitte gib einen Betrag von mindestens 5,00 € ein.";
+        topupErrorMessage.style.display = 'block';
+        return;
+    }
+    if (amount > 100) {
+        topupErrorMessage.textContent = "Du kannst maximal 100,00 € auf einmal aufladen.";
+        topupErrorMessage.style.display = 'block';
+        return;
+    }
+    if (currentBalance + amount > 100) {
+        topupErrorMessage.textContent = `Dein Guthaben darf 100,00 € nicht übersteigen. Du kannst noch maximal ${(100 - currentBalance).toFixed(2)} € aufladen.`;
+        topupErrorMessage.style.display = 'block';
+        return;
+    }
+
+    setButtonLoading(topupBalanceBtn, true);
+
+    try {
+        const response = await fetch(`${backendUrl}/create-checkout-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount, userId: user.uid })
+        });
+        if (!response.ok) {
+            const { error } = await response.json();
+            throw new Error(error || 'Fehler bei der Kommunikation mit dem Server.');
+        }
+        const session = await response.json();
+        const result = await stripe.redirectToCheckout({ sessionId: session.id });
+        if (result.error) {
+            showNotification(result.error.message, "error");
+        }
+    } catch (error) {
+        console.error("Fehler beim Starten der Aufladung:", error);
+        showNotification(`Ein Fehler ist aufgetreten: ${error.message}`, "error");
+    } finally {
+        setButtonLoading(topupBalanceBtn, false);
+    }
+}
 
 registerUsernameInput.addEventListener('input', () => {
     const username = registerUsernameInput.value.trim().toLowerCase();
     const isForbidden = forbiddenUsernameFragments.some(fragment => username.includes(fragment));
+    const isLengthValid = validateInput(registerUsernameInput, usernameErrorMessage, 'Der Benutzername');
 
     if (isForbidden && username.length > 0) {
         usernameErrorMessage.textContent = 'Dieser Benutzername ist nicht verfügbar.';
         usernameErrorMessage.style.display = 'block';
         registerUsernameInput.classList.add('invalid');
         registerBtn.disabled = true;
-    } else {
+    } else if (isLengthValid && !isForbidden) {
         usernameErrorMessage.style.display = 'none';
         registerUsernameInput.classList.remove('invalid');
-        const pass = registerPasswordInput.value;
-        const hasLength = pass.length >= 8;
-        const hasUppercase = /[A-Z]/.test(pass);
-        const hasNumber = /[0-9]/.test(pass);
-        registerBtn.disabled = !(hasLength && hasUppercase && hasNumber);
     }
+
+    const pass = registerPasswordInput.value;
+    const hasLength = pass.length >= 8;
+    const hasUppercase = /[A-Z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    registerBtn.disabled = !(hasLength && hasUppercase && hasNumber && isLengthValid && !isForbidden && agbCheckbox.checked);
 });
 
 googleUsernameInput.addEventListener('input', () => {
@@ -1080,8 +1569,11 @@ registerPasswordInput.addEventListener('input', () => {
     numberCheck.classList.toggle('valid', hasNumber);
 
     const isUsernameInvalid = registerUsernameInput.classList.contains('invalid');
-    
-    registerBtn.disabled = !(hasLength && hasUppercase && hasNumber) || isUsernameInvalid;
+    registerBtn.disabled = !(hasLength && hasUppercase && hasNumber && agbCheckbox.checked) || isUsernameInvalid;
+});
+
+agbCheckbox.addEventListener('change', () => {
+    registerPasswordInput.dispatchEvent(new Event('input'));
 });
 
 const handleLoginOnEnter = (event) => { if (event.key === 'Enter') { event.preventDefault(); loginBtn.click(); } };
@@ -1101,7 +1593,7 @@ reauthPasswordInput.addEventListener('keydown', handleConfirmDeleteOnEnter);
 
 document.getElementById('toggle-login-password').addEventListener('click', (e) => togglePasswordVisibility(loginPasswordInput, e.target));
 document.getElementById('toggle-register-password').addEventListener('click', (e) => togglePasswordVisibility(registerPasswordInput, e.target));
-document.getElementById('toggle-reauth-password').addEventListener('click', (e) => togglePasswordVisibility(reauthPasswordInput, e.target)); 
+document.getElementById('toggle-reauth-password').addEventListener('click', (e) => togglePasswordVisibility(reauthPasswordInput, e.target));
 
 closeModalButton.addEventListener('click', closeModal);
 window.addEventListener('click', (event) => { if (event.target === authModal) closeModal(); });
@@ -1116,14 +1608,14 @@ adminAreaLink.addEventListener('click', (e) => { e.preventDefault(); showAdminAr
 adminToolsLink.addEventListener('click', (e) => { e.preventDefault(); showAdminToolsPage(); });
 
 discardProfileBtn.addEventListener('click', async () => {
-    await showProfilePage(); 
+    await showProfilePage();
     showNotification("Änderungen verworfen.", "success");
 });
 
 showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(registerView); });
 showLoginLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(loginView); });
-showPasswordResetLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(passwordResetView); }); 
-backToLoginLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(loginView); }); 
+showPasswordResetLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(passwordResetView); });
+backToLoginLink.addEventListener('click', (e) => { e.preventDefault(); switchModalView(loginView); });
 
 registerBtn.addEventListener('click', async () => {
     const username = registerUsernameInput.value.trim();
@@ -1135,49 +1627,40 @@ registerBtn.addEventListener('click', async () => {
         return;
     }
 
-    setButtonLoading(registerBtn, true); // Ladeanimation starten
+    setButtonLoading(registerBtn, true);
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        
         await updateProfile(user, { displayName: username });
-        
         await setDoc(doc(db, "users", user.uid), {
             username: username, email: email, createdAt: new Date(),
             firstName: "", lastName: "", usernameChangesThisMonth: 0,
-            usernameLastChangeMonth: "none", 
-            firstNameChangeCount: 0,
-            lastNameChangeCount: 0,
-            isCoAdmin: false, isAdmin: false, isBlocked: false
+            usernameLastChangeMonth: "none", firstNameChangeCount: 0,
+            lastNameChangeCount: 0, isCoAdmin: false, isAdmin: false,
+            isBlocked: false, isVerified: false, balance: 0, favorites: []
         });
 
         await sendEmailVerification(user);
-        
         document.getElementById('verification-email-display').textContent = email;
         switchModalView(verificationMessage);
 
         const resendBtn = document.getElementById('resend-verification-btn');
-        
         const newResendBtn = resendBtn.cloneNode(true);
         resendBtn.parentNode.replaceChild(newResendBtn, resendBtn);
-
         startResendCooldown(newResendBtn, 60);
 
         newResendBtn.addEventListener('click', async () => {
-            if (!newResendBtn.disabled) {
+            if (!newResendBtn.disabled && auth.currentUser) {
                 try {
-                    if (auth.currentUser) {
-                        await sendEmailVerification(auth.currentUser);
-                        showNotification("Verifizierungs-E-Mail erneut gesendet.", "success");
-                        startResendCooldown(newResendBtn, 60);
-                    }
+                    await sendEmailVerification(auth.currentUser);
+                    showNotification("Verifizierungs-E-Mail erneut gesendet.", "success");
+                    startResendCooldown(newResendBtn, 60);
                 } catch (error) {
                     showNotification("Fehler beim Senden der E-Mail.", "error");
                 }
             }
         });
-
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
             showNotification('Diese E-Mail-Adresse wird bereits verwendet.');
@@ -1185,7 +1668,7 @@ registerBtn.addEventListener('click', async () => {
             showNotification('Fehler bei der Registrierung: ' + error.message);
         }
     } finally {
-        setButtonLoading(registerBtn, false); // Ladeanimation beenden
+        setButtonLoading(registerBtn, false);
     }
 });
 
@@ -1198,7 +1681,7 @@ loginBtn.addEventListener('click', async () => {
         return;
     }
 
-    setButtonLoading(loginBtn, true); // Ladeanimation starten
+    setButtonLoading(loginBtn, true);
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -1210,13 +1693,13 @@ loginBtn.addEventListener('click', async () => {
             signOut(auth);
         }
     } catch (error) {
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-             showNotification('E-Mail oder Passwort ist falsch.');
+        if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(error.code)) {
+            showNotification('E-Mail oder Passwort ist falsch.');
         } else {
-             showNotification('Fehler bei der Anmeldung: ' + error.message);
+            showNotification('Fehler bei der Anmeldung: ' + error.message);
         }
     } finally {
-        setButtonLoading(loginBtn, false); // Ladeanimation beenden
+        setButtonLoading(loginBtn, false);
     }
 });
 
@@ -1237,32 +1720,23 @@ googleSignInBtn.addEventListener('click', async () => {
                     showNotification("Bitte gib einen Benutzernamen ein.");
                     return;
                 }
-
                 try {
                     await updateProfile(user, { displayName: username });
                     await setDoc(doc(db, "users", user.uid), {
-                        username: username,
-                        email: user.email,
-                        createdAt: new Date(),
+                        username: username, email: user.email, createdAt: new Date(),
                         firstName: result.user.displayName.split(' ')[0] || "",
                         lastName: result.user.displayName.split(' ').slice(1).join(' ') || "",
-                        usernameChangesThisMonth: 0,
-                        usernameLastChangeMonth: "none", 
-                        firstNameChangeCount: 0,
-                        lastNameChangeCount: 0,
-                        isCoAdmin: false,
-                        isAdmin: false,
-                        isBlocked: false
+                        usernameChangesThisMonth: 0, usernameLastChangeMonth: "none",
+                        firstNameChangeCount: 0, lastNameChangeCount: 0,
+                        isCoAdmin: false, isAdmin: false, isBlocked: false,
+                        isVerified: false, balance: 0, favorites: []
                     });
-
                     closeModal();
                     showNotification(`Willkommen, ${username}! Dein Konto wurde erstellt.`, 'success');
-
                 } catch (error) {
                     showNotification('Fehler beim Speichern des Benutzernamens: ' + error.message);
                 }
             }, { once: true });
-
         } else {
             closeModal();
             showNotification(`Willkommen zurück, ${user.displayName}!`, 'success');
@@ -1286,12 +1760,10 @@ sendResetEmailBtn.addEventListener('click', async () => {
         showNotification("Bitte gib deine E-Mail-Adresse ein.", "error");
         return;
     }
-
-    setButtonLoading(sendResetEmailBtn, true); // Ladeanimation starten
+    setButtonLoading(sendResetEmailBtn, true);
 
     try {
         await sendPasswordResetEmail(auth, email);
-        
         passwordResetInitialView.style.display = 'none';
         passwordResetSentView.style.display = 'block';
         document.getElementById('reset-email-display').textContent = email;
@@ -1299,7 +1771,6 @@ sendResetEmailBtn.addEventListener('click', async () => {
         const resendBtn = document.getElementById('resend-reset-email-btn');
         const newResendBtn = resendBtn.cloneNode(true);
         resendBtn.parentNode.replaceChild(newResendBtn, resendBtn);
-
         startResendCooldown(newResendBtn, 60);
 
         newResendBtn.addEventListener('click', async () => {
@@ -1316,7 +1787,7 @@ sendResetEmailBtn.addEventListener('click', async () => {
     } catch (error) {
         showNotification("Fehler: " + error.message, "error");
     } finally {
-        setButtonLoading(sendResetEmailBtn, false); // Ladeanimation beenden
+        setButtonLoading(sendResetEmailBtn, false);
     }
 });
 
@@ -1324,12 +1795,8 @@ resetPasswordBtn.addEventListener('click', () => {
     const user = auth.currentUser;
     if (user) {
         sendPasswordResetEmail(auth, user.email)
-            .then(() => {
-                showNotification("E-Mail zum Zurücksetzen wurde an dein Postfach gesendet.", "success");
-            })
-            .catch((error) => {
-                showNotification("Fehler: " + error.message);
-            });
+            .then(() => showNotification("E-Mail zum Zurücksetzen wurde an dein Postfach gesendet.", "success"))
+            .catch((error) => showNotification("Fehler: " + error.message));
     }
 });
 
@@ -1337,8 +1804,17 @@ saveProfileBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
     if (!user) return;
 
+    const isUsernameValid = validateInput(profileUsername, usernameProfileError, 'Der Benutzername');
+    const isFirstnameValid = validateInput(profileFirstname, firstnameProfileError, 'Der Vorname');
+    const isLastnameValid = validateInput(profileLastname, lastnameProfileError, 'Der Nachname');
+
+    if (!isUsernameValid || !isFirstnameValid || !isLastnameValid) {
+        showNotification("Bitte korrigiere die Fehler in deinem Profil.", "error");
+        return;
+    }
+
     const userDocRef = doc(db, "users", user.uid);
-    setButtonLoading(saveProfileBtn, true); // Ladeanimation starten
+    setButtonLoading(saveProfileBtn, true);
 
     try {
         const userDocSnap = await getDoc(userDocRef);
@@ -1353,13 +1829,10 @@ saveProfileBtn.addEventListener('click', async () => {
         const newLastName = profileLastname.value.trim();
         const updates = {};
         let errorOccurred = false;
-        
-        // ... (restliche Logik bleibt unverändert)
 
         if (newUsername !== user.displayName) {
             const currentMonth = new Date().toISOString().slice(0, 7);
             const changesThisMonth = data.usernameLastChangeMonth === currentMonth ? data.usernameChangesThisMonth : 0;
-            
             if (changesThisMonth < 2) {
                 await updateProfile(user, { displayName: newUsername });
                 updates.username = newUsername;
@@ -1395,42 +1868,35 @@ saveProfileBtn.addEventListener('click', async () => {
                 errorOccurred = true;
             }
         }
-        
-        if (errorOccurred) return;
+
+        if (errorOccurred) {
+            setButtonLoading(saveProfileBtn, false);
+            return;
+        }
 
         if (Object.keys(updates).length > 0) {
             await updateDoc(userDocRef, updates);
-            
             const updatedDoc = await getDoc(userDocRef);
-            if (updatedDoc.exists()) {
-                currentUserProfile = updatedDoc.data();
-            }
-
+            if (updatedDoc.exists()) currentUserProfile = updatedDoc.data();
             showNotification("Dein Profil wurde erfolgreich aktualisiert!", "success");
             userProfileLink.textContent = user.displayName;
         } else {
             showNotification("Es wurden keine Änderungen vorgenommen.", "success");
         }
-        
         await showProfilePage();
-
     } catch (error) {
         console.error("Fehler beim Aktualisieren des Profils:", error);
         showNotification("Ein Fehler ist aufgetreten: " + error.message, "error");
         await showProfilePage();
     } finally {
-        setButtonLoading(saveProfileBtn, false); // Ladeanimation beenden
+        setButtonLoading(saveProfileBtn, false);
     }
 });
 
-
-deleteAccountBtn.addEventListener('click', () => {
-    reauthDeleteModal.style.display = 'flex';
-});
-
+deleteAccountBtn.addEventListener('click', () => { reauthDeleteModal.style.display = 'flex'; });
 closeReauthButton.addEventListener('click', () => {
     reauthDeleteModal.style.display = 'none';
-    reauthPasswordInput.value = ''; 
+    reauthPasswordInput.value = '';
 });
 
 confirmDeleteBtn.addEventListener('click', async () => {
@@ -1441,26 +1907,18 @@ confirmDeleteBtn.addEventListener('click', async () => {
         showNotification("Bitte gib dein Passwort ein.", "error");
         return;
     }
-
-    setButtonLoading(confirmDeleteBtn, true); // Ladeanimation starten
+    setButtonLoading(confirmDeleteBtn, true);
     const credential = EmailAuthProvider.credential(user.email, password);
     const userDocRef = doc(db, "users", user.uid);
 
     try {
         await reauthenticateWithCredential(user, credential);
-
-        // ... (Logik zum Löschen der Bestellungen und des Dokuments bleibt gleich)
         try {
             const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
             const querySnapshot = await getDocs(ordersQuery);
-            
             const deletePromises = [];
-            querySnapshot.forEach((doc) => {
-                deletePromises.push(deleteDoc(doc.ref));
-            });
-            
+            querySnapshot.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
             await Promise.all(deletePromises);
-
         } catch (orderError) {
             console.error("Fehler beim Löschen der Bestellungen:", orderError);
             showNotification("Die Bestellungen konnten nicht gelöscht werden. Das Konto wird nicht gelöscht.", "error");
@@ -1472,16 +1930,14 @@ confirmDeleteBtn.addEventListener('click', async () => {
         } catch (dbError) {
             console.error("Fehler beim Löschen des Firestore-Dokuments:", dbError);
             showNotification("Konto konnte nicht vollständig gelöscht werden (DB-Fehler). Bitte kontaktiere den Support.", "error");
-            return; 
+            return;
         }
-        
-        await deleteUser(user);
 
+        await deleteUser(user);
         reauthDeleteModal.style.display = 'none';
         showNotification("Dein Konto und alle zugehörigen Bestellungen wurden endgültig gelöscht.", "success");
-
     } catch (authError) {
-        if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+        if (['auth/wrong-password', 'auth/invalid-credential'].includes(authError.code)) {
             showNotification("Das eingegebene Passwort ist falsch.", "error");
         } else {
             console.error("Fehler bei Authentifizierung oder dem Löschen des Kontos:", authError);
@@ -1489,12 +1945,17 @@ confirmDeleteBtn.addEventListener('click', async () => {
         }
     } finally {
         reauthPasswordInput.value = '';
-        setButtonLoading(confirmDeleteBtn, false); // Ladeanimation beenden
+        setButtonLoading(confirmDeleteBtn, false);
     }
 });
 
 customHourSelect.addEventListener('change', () => {
     const selectedHour = customHourSelect.getAttribute('data-value');
+    const selectedOption = customHourSelect.querySelector(`.custom-option[data-value="${selectedHour}"]`);
+    if (selectedOption && selectedOption.classList.contains('disabled')) {
+        customHourSelect.setAttribute('data-value', '');
+        customHourSelect.querySelector('span').textContent = '--';
+    }
     populateMinutes(selectedHour === '14');
     customMinuteSelect.setAttribute('data-value', '');
     customMinuteSelect.querySelector('span').textContent = '--';
@@ -1503,63 +1964,149 @@ customHourSelect.addEventListener('change', () => {
 
 customMinuteSelect.addEventListener('change', renderCart);
 
-menuContainer.addEventListener('click', (e) => {
-    const target = e.target;
-    const menuItem = target.closest('.menu-item');
-    if (!menuItem) return;
-
-    const id = menuItem.dataset.id;
-    const name = menuItem.dataset.name;
-    const price = parseFloat(menuItem.dataset.price);
-
-    if (!cart[id]) {
-        cart[id] = { name, price, quantity: 0 };
-    }
-
-    if (target.classList.contains('plus-btn')) {
-        cart[id].quantity++;
-    } else if (target.classList.contains('minus-btn')) {
-        if (cart[id].quantity > 0) {
-            cart[id].quantity--;
-        }
-    }
-
-    if (cart[id].quantity === 0) {
-        delete cart[id];
-    }
-
-    const quantityDisplay = menuItem.querySelector('.quantity');
-    quantityDisplay.textContent = cart[id] ? cart[id].quantity : 0;
-    
-    renderCart();
-});
-
-// NEUE HILFSFUNKTION FÜR LADE-ZUSTÄNDE
 const setButtonLoading = (button, isLoading) => {
     if (!button) return;
     const btnText = button.querySelector('.btn-text');
     const btnSpinner = button.querySelector('.btn-spinner');
-
-    if (isLoading) {
-        button.disabled = true;
-        if (btnText) btnText.style.display = 'none';
-        if (btnSpinner) btnSpinner.style.display = 'inline-block';
-    } else {
-        button.disabled = false;
-        if (btnText) btnText.style.display = 'inline-block'; // 'inline-block' für Flexbox-Kompatibilität
-        if (btnSpinner) btnSpinner.style.display = 'none';
-    }
+    button.disabled = isLoading;
+    if (btnText) btnText.style.display = isLoading ? 'none' : 'inline-block';
+    if (btnSpinner) btnSpinner.style.display = isLoading ? 'inline-block' : 'none';
 };
 
+function handleUserSearchOnInput() {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(performUserSearch, 300);
+}
+
+async function performUserSearch() {
+    const searchTerm = userSearchInput.value.trim();
+    if (searchTerm.length === 0) {
+        userSearchResultsContainer.innerHTML = '';
+        return;
+    }
+    userSearchResultsContainer.innerHTML = '<p>Suche Nutzer...</p>';
+
+    try {
+        const usernameQuery = query(collection(db, "users"),
+            where("username", ">=", searchTerm),
+            where("username", "<=", searchTerm + '\uf8ff')
+        );
+        const emailQuery = query(collection(db, "users"),
+            where("email", ">=", searchTerm),
+            where("email", "<=", searchTerm + '\uf8ff')
+        );
+
+        const [usernameSnapshot, emailSnapshot] = await Promise.all([
+            getDocs(usernameQuery),
+            getDocs(emailQuery)
+        ]);
+
+        const users = new Map();
+        usernameSnapshot.forEach(doc => users.set(doc.id, { id: doc.id, ...doc.data() }));
+        emailSnapshot.forEach(doc => users.set(doc.id, { id: doc.id, ...doc.data() }));
+        renderUserSearchResults(Array.from(users.values()));
+    } catch (error) {
+        console.error("Fehler bei der Nutzersuche:", error);
+        userSearchResultsContainer.innerHTML = '<p>Bei der Suche ist ein Fehler aufgetreten. Prüfen Sie die Browser-Konsole für Details.</p>';
+    }
+}
+
+function renderUserSearchResults(users) {
+    if (users.length === 0) {
+        userSearchResultsContainer.innerHTML = userSearchInput.value.trim().length > 0 ? '<p>Keine Nutzer für diese Suche gefunden.</p>' : '';
+        return;
+    }
+    userSearchResultsContainer.innerHTML = '';
+    users.forEach(user => {
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        const userCard = document.createElement('div');
+        userCard.className = 'user-result-card';
+        userCard.dataset.userId = user.id;
+        userCard.innerHTML = `
+            <div class="user-info">
+                <strong>${user.username}</strong>
+                <span>${fullName || 'Kein Name angegeben'}</span>
+                <span>${user.email}</span>
+            </div>
+            <div class="user-status">
+                ${user.isBlocked ? '<span class="status-badge blocked">Gesperrt</span>' : ''}
+                ${user.isAdmin ? '<span class="status-badge admin">Admin</span>' : ''}
+                ${user.isCoAdmin ? '<span class="status-badge co-admin">Co-Admin</span>' : ''}
+            </div>
+            <div class="user-actions">
+                 <button class="view-profile-btn secondary-button" data-user-id="${user.id}">Profil ansehen</button>
+            </div>
+        `;
+        userSearchResultsContainer.appendChild(userCard);
+    });
+}
+
+async function openUserDetailModal(userId) {
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+        showNotification("Nutzer nicht gefunden.", "error");
+        return;
+    }
+    const user = userSnap.data();
+    const modalContent = userDetailModal.querySelector('.modal-content');
+    modalContent.innerHTML = `
+        <span class="close-user-detail-modal close-button">&times;</span>
+        <h2>Profil von ${user.username}</h2>
+        <div class="user-details-content">
+            <p><strong>Benutzername:</strong> ${user.username}</p>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Name:</strong> ${user.firstName || ''} ${user.lastName || ''}</p>
+            <p><strong>Status:</strong> ${user.isBlocked ? 'Gesperrt' : 'Aktiv'}</p>
+            <p><strong>Rolle:</strong> ${user.isAdmin ? 'Admin' : (user.isCoAdmin ? 'Co-Admin' : 'Nutzer')}</p>
+        </div>
+        <div class="modal-button-group">
+            <button class="toggle-block-btn danger-button" data-user-id="${userId}">${user.isBlocked ? 'Nutzer entsperren' : 'Nutzer sperren'}</button>
+            <button class="toggle-coadmin-btn secondary-button" data-user-id="${userId}">${user.isCoAdmin ? 'Co-Admin entfernen' : 'Zum Co-Admin machen'}</button>
+        </div>
+    `;
+    userDetailModal.style.display = 'flex';
+    const closeModal = () => userDetailModal.style.display = 'none';
+    modalContent.querySelector('.close-user-detail-modal').addEventListener('click', closeModal);
+
+    modalContent.querySelector('.toggle-block-btn').addEventListener('click', async (e) => {
+        const uid = e.target.dataset.userId;
+        const isCurrentlyBlocked = user.isBlocked;
+        await updateDoc(doc(db, "users", uid), { isBlocked: !isCurrentlyBlocked });
+        showNotification(`Nutzer wurde ${!isCurrentlyBlocked ? 'gesperrt' : 'entsperrt'}.`, 'success');
+        closeModal();
+        await performUserSearch();
+    });
+
+    modalContent.querySelector('.toggle-coadmin-btn').addEventListener('click', async (e) => {
+        const uid = e.target.dataset.userId;
+        const isCurrentlyCoAdmin = user.isCoAdmin;
+        await updateDoc(doc(db, "users", uid), { isCoAdmin: !isCurrentlyCoAdmin });
+        showNotification(`Nutzer ist ${!isCurrentlyCoAdmin ? 'jetzt Co-Admin' : 'kein Co-Admin mehr'}.`, 'success');
+        closeModal();
+        await performUserSearch();
+    });
+}
+
 checkoutBtn.addEventListener('click', () => {
-    resetCheckoutModalState(); 
+    resetCheckoutModalState();
     const hour = customHourSelect.getAttribute('data-value');
     const minute = customMinuteSelect.getAttribute('data-value');
     checkoutPickupDay.textContent = selectedPickupDay || '--';
     checkoutPickupTime.textContent = hour && minute ? `${hour}:${minute}` : '--:--';
+    const totalPrice = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const currentBalance = currentUserProfile?.balance || 0;
+
+    if (currentBalance >= totalPrice) {
+        payWithBalanceBtn.disabled = false;
+        payWithBalanceBtn.querySelector('.btn-text').innerHTML = `Mit Guthaben bezahlen <br> <small>(${currentBalance.toFixed(2).replace('.', ',')} €)</small>`;
+    } else {
+        payWithBalanceBtn.disabled = true;
+        payWithBalanceBtn.querySelector('.btn-text').textContent = `Nicht genügend Guthaben`;
+    }
     checkoutModal.style.display = 'flex';
-    // Der Aufruf zur Initialisierung der Zahlung wurde von hier entfernt.
 });
+
 const closeAndResetModal = () => {
     resetCheckoutModalState();
     checkoutModal.style.display = 'none';
@@ -1578,7 +2125,6 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
     const target = e.target;
     const orderCard = target.closest('.order-card');
     if (!orderCard) return;
-
     const orderId = target.dataset.id;
     if (!orderId) return;
     const orderRef = doc(db, "orders", orderId);
@@ -1589,10 +2135,7 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
             await updateDoc(orderRef, { adminCompleted: true });
             orderCard.style.transition = 'opacity 0.3s ease';
             orderCard.style.opacity = '0';
-            setTimeout(() => {
-                orderCard.remove();
-                renderAdminStats();
-            }, 300);
+            setTimeout(() => { orderCard.remove(); renderAdminStats(); }, 300);
             showNotification("Bestellung als fertig markiert.", "success");
         } catch (error) {
             console.error("Fehler bei Admin-Aktion 'Fertig': ", error);
@@ -1607,10 +2150,7 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
             await updateDoc(orderRef, { isReported: true });
             orderCard.style.transition = 'opacity 0.3s ease';
             orderCard.style.opacity = '0';
-            setTimeout(() => {
-                orderCard.remove();
-                renderAdminStats();
-            }, 300);
+            setTimeout(() => { orderCard.remove(); renderAdminStats(); }, 300);
             showNotification("Bestellung wurde gemeldet und zur Überprüfung verschoben.", "success");
         } catch (error) {
             console.error("Fehler bei Admin-Aktion 'Melden': ", error);
@@ -1618,7 +2158,7 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
             target.disabled = false;
         }
     }
-    
+
     if (target.matches('.prepare-order-btn') && !target.disabled) {
         try {
             target.disabled = true;
@@ -1645,14 +2185,13 @@ userOrdersListContainer.addEventListener('click', async (e) => {
     try {
         target.disabled = true;
         await updateDoc(orderRef, { userAcknowledged: true });
-        
         orderCard.style.transition = 'opacity 0.3s ease';
         orderCard.style.opacity = '0';
-        setTimeout(() => orderCard.remove(), 300);
+        setTimeout(() => { orderCard.remove(); renderArchivedOrders(); }, 300);
         showNotification("Bestellung als erhalten markiert.", "success");
 
         const updatedDoc = await getDoc(orderRef);
-        if (updatedDoc.exists() && updatedDoc.data().adminCompleted === true) {
+        if (updatedDoc.exists() && updatedDoc.data().adminCompleted) {
             await deleteDoc(orderRef);
         }
     } catch (error) {
@@ -1678,18 +2217,14 @@ reportedOrderDetailContent.addEventListener('click', async (e) => {
 
         try {
             e.target.disabled = true;
-            
             await Promise.all([
                 updateDoc(userRef, { isBlocked: true }),
                 deleteDoc(orderRef)
             ]);
-
             showNotification("Nutzer wurde gesperrt und die Bestellung wurde gelöscht.", "success");
-            
             reportedOrderDetailModal.style.display = 'none';
             renderReportedOrders();
             renderAdminStats();
-
         } catch (error) {
             console.error("Fehler beim Sperren des Nutzers & Löschen der Bestellung:", error);
             showNotification("Aktion fehlgeschlagen.", "error");
@@ -1716,8 +2251,7 @@ reportedOrderDetailContent.addEventListener('click', async (e) => {
 });
 
 deleteOldOrdersBtn.addEventListener('click', async () => {
-    const confirmation = window.confirm("Möchtest du wirklich alle Bestellungen, die älter als 7 Tage sind, endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.");
-    if (!confirmation) return;
+    if (!window.confirm("Möchtest du wirklich alle Bestellungen, die älter als 7 Tage sind, endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) return;
 
     deleteOldOrdersBtn.disabled = true;
     deleteOldOrdersBtn.textContent = "Lösche...";
@@ -1735,15 +2269,10 @@ deleteOldOrdersBtn.addEventListener('click', async () => {
         }
 
         const deletePromises = [];
-        querySnapshot.forEach((doc) => {
-            deletePromises.push(deleteDoc(doc.ref));
-        });
-        
+        querySnapshot.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
         await Promise.all(deletePromises);
-        
         showNotification(`${deletePromises.length} alte Bestellungen wurden erfolgreich gelöscht.`, "success");
         renderAdminStats();
-
     } catch (error) {
         console.error("Fehler beim Löschen alter Bestellungen:", error);
         showNotification("Ein Fehler ist beim Löschen aufgetreten.", "error");
@@ -1753,67 +2282,44 @@ deleteOldOrdersBtn.addEventListener('click', async () => {
     }
 });
 
-
-
 startOnlinePaymentBtn.addEventListener('click', async () => {
     setButtonLoading(startOnlinePaymentBtn, true);
-    
-    // Initialisiert Stripe (holt Payment Intent etc.)
-    const isReady = await initializeCheckout(); 
-    
+    const isReady = await initializeCheckout();
     setButtonLoading(startOnlinePaymentBtn, false);
-
     if (isReady) {
-        // Zeigt das Kartenformular, wenn alles geklappt hat
         checkoutInitialView.style.display = 'none';
         paymentElementContainer.style.display = 'block';
     }
 });
+
 submitPaymentBtn.addEventListener('click', handleSubmit);
 backToPaymentOptionsBtn.addEventListener('click', resetCheckoutModalState);
 
-// In der Datei: app.js
-
-// ALTE initializeCheckout FUNKTION LÖSCHEN UND DURCH DIESE ERSETZEN
-
 async function initializeCheckout() {
     document.getElementById('payment-request-button-container').style.display = 'none';
-    const totalPrice = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const cartArray = Object.keys(cart).map(id => ({ id, quantity: cart[id].quantity }));
+    const totalPriceForDisplay = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     try {
-        // 1. Payment Intent vom Backend holen
         const response = await fetch(`${backendUrl}/create-payment-intent`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ totalPrice: totalPrice }),
+            body: JSON.stringify({ cart: cartArray }),
         });
-
         if (!response.ok) {
             const { error } = await response.json();
             throw new Error(error || `HTTP-Fehler! Status: ${response.status}`);
         }
-
         const { clientSecret } = await response.json();
         elements = stripe.elements({ clientSecret, locale: 'de' });
 
-        
-        // ... (der Rest der Funktion bleibt wie in deiner Originaldatei)
         const paymentRequest = stripe.paymentRequest({
-            country: 'DE',
-            currency: 'eur',
-            total: {
-                label: 'Gesamtbetrag',
-                amount: Math.round(totalPrice * 100),
-            },
-            requestPayerName: true,
-            requestPayerEmail: true,
+            country: 'DE', currency: 'eur',
+            total: { label: 'Gesamtbetrag', amount: Math.round(totalPriceForDisplay * 100) },
+            requestPayerName: true, requestPayerEmail: true,
         });
 
-        const prButton = elements.create('paymentRequestButton', {
-            paymentRequest,
-        });
-
-        
+        const prButton = elements.create('paymentRequestButton', { paymentRequest });
         const canMakePayment = await paymentRequest.canMakePayment();
         if (canMakePayment) {
             prButton.mount('#payment-request-button-container');
@@ -1825,17 +2331,11 @@ async function initializeCheckout() {
         paymentRequest.on('paymentmethod', async (ev) => {
             const hour = customHourSelect.getAttribute('data-value');
             const minute = customMinuteSelect.getAttribute('data-value');
-            const orderDetails = {
-                cart: cart,
-                pickupDay: selectedPickupDay,
-                pickupTime: `${hour}:${minute}`
-            };
+            const orderDetails = { cart, pickupDay: selectedPickupDay, pickupTime: `${hour}:${minute}` };
             localStorage.setItem('pendingOrderDetails', JSON.stringify(orderDetails));
 
             const { paymentIntent, error: confirmError } = await stripe.confirmCardPayment(
-                clientSecret,
-                { payment_method: ev.paymentMethod.id },
-                { handleActions: false }
+                clientSecret, { payment_method: ev.paymentMethod.id }, { handleActions: false }
             );
 
             if (confirmError) {
@@ -1846,42 +2346,68 @@ async function initializeCheckout() {
                 ev.complete('success');
                 if (paymentIntent.status === "requires_action") {
                     const { error } = await stripe.confirmCardPayment(clientSecret);
-                    if (error) {
-                       showMessage("Zusätzliche Bestätigung fehlgeschlagen.");
-                    }
+                    if (error) showMessage("Zusätzliche Bestätigung fehlgeschlagen.");
                 }
             }
         });
 
         const paymentElement = elements.create("payment", { layout: "tabs" });
         paymentElement.mount("#payment-element");
-        
-        return true; // Signalisiert Erfolg
-
+        return true;
     } catch (e) {
         console.error('Fehler beim Initialisieren des Checkouts:', e);
         showNotification(`Bezahlvorgang konnte nicht gestartet werden: ${e.message}`, 'error');
         resetCheckoutModalState();
-        return false; // Signalisiert Fehler
+        return false;
     }
 }
 
-// Diese kleine Hilfsfunktion setzen wir an die Stelle der alten Logik für den "Mit Karte zahlen"-Button
-function showCardPaymentForm() {
-    checkoutInitialView.style.display = 'none';
-    paymentElementContainer.style.display = 'block';
+async function handlePayWithBalance() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const totalPrice = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const isRestverkaufOrder = cart.hasOwnProperty('isRestverkauf');
+    const hour = customHourSelect.getAttribute('data-value');
+    const minute = customMinuteSelect.getAttribute('data-value');
+    const pickupTime = isRestverkaufOrder ? "Sofort" : `${hour}:${minute}`;
+    const orderCart = { ...cart };
+    if (orderCart.isRestverkauf) delete orderCart.isRestverkauf;
+    setButtonLoading(payWithBalanceBtn, true);
+
+    try {
+        const userRef = doc(db, "users", user.uid);
+        await runTransaction(db, async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists()) throw "Benutzerdokument nicht gefunden.";
+            const currentBalance = userDoc.data().balance || 0;
+            if (currentBalance < totalPrice) throw "Nicht genügend Guthaben.";
+            const newBalance = currentBalance - totalPrice;
+            transaction.update(userRef, { balance: newBalance });
+        });
+        await saveOrderToFirestore('Guthaben', orderCart, selectedPickupDay, pickupTime, isRestverkaufOrder);
+    } catch (error) {
+        console.error("Fehler bei der Guthaben-Zahlung: ", error);
+        showNotification(`Zahlung fehlgeschlagen: ${error}`, "error");
+        setButtonLoading(payWithBalanceBtn, false);
+    }
 }
 
-// Die alte resetPaymentButton Funktion kannst du auch ersetzen, um sie klarer zu machen
-// Die alte resetPaymentButton Funktion kannst du auch ersetzen, um sie klarer zu machen
-function resetPaymentButton() {
-    const btnText = startOnlinePaymentBtn.querySelector('.btn-text');
-    // KORREKTUR: Hier wurde der korrekte Variablenname 'startOnlinePaymentBtn' eingesetzt.
-    const btnSpinner = startOnlinePaymentBtn.querySelector('.btn-spinner'); 
-    
-    startOnlinePaymentBtn.disabled = false;
-    if (btnText) btnText.style.display = 'inline';
-    if (btnSpinner) btnSpinner.style.display = 'none';
+async function createOrderObject(paymentMethod, orderCart, orderPickupDay, orderPickupTime) {
+    const user = auth.currentUser;
+    const totalPrice = Object.values(orderCart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const userFirstName = currentUserProfile?.firstName || "";
+    const userLastName = currentUserProfile?.lastName || "";
+    const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
+
+    return {
+        orderNumber, userId: user.uid, userName: user.displayName,
+        userFirstName, userLastName, items: orderCart, totalPrice,
+        pickupDay: orderPickupDay, pickupTime: orderPickupTime,
+        timestamp: Timestamp.now(), status: 'pending', paymentMethod,
+        isPaid: paymentMethod !== 'Barzahlung', adminCompleted: false,
+        userAcknowledged: false, isReported: false, isPrepared: false
+    };
 }
 
 async function handleSubmit(e) {
@@ -1896,19 +2422,12 @@ async function handleSubmit(e) {
         return;
     }
 
-    // KORREKTUR: Speichere den Warenkorb, bevor der Nutzer die Seite verlässt.
-    const orderDetails = {
-        cart: cart,
-        pickupDay: selectedPickupDay,
-        pickupTime: `${hour}:${minute}`
-    };
+    const orderDetails = { cart, pickupDay: selectedPickupDay, pickupTime: `${hour}:${minute}` };
     localStorage.setItem('pendingOrderDetails', JSON.stringify(orderDetails));
 
     const { error } = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-            return_url: window.location.origin + window.location.pathname,
-        },
+        confirmParams: { return_url: window.location.origin + window.location.pathname },
     });
 
     if (error.type === "card_error" || error.type === "validation_error") {
@@ -1916,140 +2435,128 @@ async function handleSubmit(e) {
     } else {
         showMessage("Ein unerwarteter Fehler ist aufgetreten.");
     }
-
     setLoading(false);
 }
 
 async function checkStatus() {
     const clientSecret = new URLSearchParams(window.location.search).get("payment_intent_client_secret");
     if (!clientSecret) return;
-
-    // Entferne die Parameter aus der URL für eine saubere Ansicht
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    // *** HIER IST DIE WICHTIGE ÄNDERUNG ***
-    // Wir warten, bis Firebase den Nutzer nach der Weiterleitung geladen hat.
     const user = await getAuthUserAfterRedirect();
     if (!user) {
-        // Sollte nicht passieren, wenn der Checkout angemeldet gestartet wurde, aber als Sicherheitsnetz.
         showNotification("Sitzung abgelaufen. Bitte melde dich erneut an, um die Bestellung zu sehen.", "error");
         return;
     }
-
     const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
 
-
-switch (paymentIntent.status) {
-    case "succeeded":
-        const pendingOrderJSON = localStorage.getItem('pendingOrderDetails');
-        if (pendingOrderJSON) {
-            const pendingOrder = JSON.parse(pendingOrderJSON);
-            try {
-                // Wir versuchen, die Bestellung zu speichern
-                await saveOrderToFirestore('Online-Zahlung', pendingOrder.cart, pendingOrder.pickupDay, pendingOrder.pickupTime);
-                
-                // Nur wenn das Speichern erfolgreich war, räumen wir auf und leiten weiter
-                localStorage.removeItem('pendingOrderDetails');
-                showNotification("Zahlung erfolgreich! Deine Bestellung wurde aufgegeben.", "success");
-                resetOrder();
-                showUserOrdersPage();
-
-            } catch (error) {
-                // Wenn das Speichern fehlschlägt, geben wir eine spezifische Fehlermeldung aus
-                console.error("Fehler: Zahlung erfolgreich, aber Bestellung konnte nicht gespeichert werden:", error);
-                showNotification("Zahlung erfolgreich, aber die Bestellung konnte nicht gespeichert werden. Bitte kontaktiere den Support mit der Bestellzeit.", "error");
-                // WICHTIG: Wir löschen die Bestelldetails NICHT aus dem Speicher,
-                // damit der Support das Problem nachvollziehen kann.
+    switch (paymentIntent.status) {
+        case "succeeded":
+            const pendingOrderJSON = localStorage.getItem('pendingOrderDetails');
+            if (pendingOrderJSON) {
+                const pendingOrder = JSON.parse(pendingOrderJSON);
+                try {
+                    const orderCart = { ...pendingOrder.cart };
+                    if (orderCart.isRestverkauf) delete orderCart.isRestverkauf;
+                    await saveOrderToFirestore('Online-Zahlung', orderCart, pendingOrder.pickupDay, pendingOrder.pickupTime, pendingOrder.cart.hasOwnProperty('isRestverkauf'));
+                    localStorage.removeItem('pendingOrderDetails');
+                    showNotification("Zahlung erfolgreich! Deine Bestellung wurde aufgegeben.", "success");
+                    resetOrder();
+                    showUserOrdersPage();
+                } catch (error) {
+                    console.error("Fehler: Zahlung erfolgreich, aber Bestellung konnte nicht gespeichert werden:", error);
+                    showNotification("Zahlung erfolgreich, aber die Bestellung konnte nicht gespeichert werden. Bitte kontaktiere den Support mit der Bestellzeit.", "error");
+                }
+            } else {
+                showNotification("Zahlung erfolgreich, aber die Bestelldaten konnten nicht gefunden werden. Bitte kontaktiere den Support.", "error");
             }
-        } else {
-            showNotification("Zahlung erfolgreich, aber die Bestelldaten konnten nicht gefunden werden. Bitte kontaktiere den Support.", "error");
-        }
-        break;
-
-
+            break;
         case "processing":
-            showMessage("Deine Zahlung wird verarbeitet.");
+            showNotification("Deine Zahlung wird noch verarbeitet.", "success");
             break;
         case "requires_payment_method":
-            showMessage("Zahlung fehlgeschlagen. Bitte versuche es mit einer anderen Zahlungsmethode.");
+            showNotification("Zahlung fehlgeschlagen. Deine Bestellung wurde nicht aufgegeben.", "error");
+            checkoutBtn.click();
             break;
         default:
-            showMessage("Etwas ist schiefgelaufen.");
+            showNotification("Ein Fehler ist aufgetreten. Die Bestellung konnte nicht abgeschlossen werden.", "error");
             break;
     }
 }
 
-confirmOrderBtn.addEventListener('click', () => {
-    const hour = customHourSelect.getAttribute('data-value');
-    const minute = customMinuteSelect.getAttribute('data-value');
-    saveOrderToFirestore('Barzahlung', cart, selectedPickupDay, `${hour}:${minute}`);
-});
-
-
-async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, orderPickupTime) {
+async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, orderPickupTime, isRestverkauf = false) {
     const user = auth.currentUser;
     if (!user) {
         showNotification("Du musst angemeldet sein, um zu bestellen.", "error");
         return;
     }
 
-    if (Object.keys(orderCart).length === 0 || !orderPickupDay || !orderPickupTime) {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 3600000);
+    const oneHourAgoTimestamp = Timestamp.fromDate(oneHourAgo);
+    const ordersLastHourQuery = query(
+        collection(db, "orders"),
+        where("userId", "==", user.uid),
+        where("timestamp", ">=", oneHourAgoTimestamp)
+    );
+
+    try {
+        const snapshot = await getDocs(ordersLastHourQuery);
+        if (snapshot.size >= 5) {
+            showNotification("Bestelllimit erreicht. Du kannst maximal 5 Bestellungen pro Stunde aufgeben.", "error");
+            setButtonLoading(submitPaymentBtn, false);
+            setButtonLoading(payWithBalanceBtn, false);
+            return;
+        }
+    } catch (error) {
+        console.error("Fehler bei der Prüfung des Bestelllimits:", error);
+        showNotification("Bestellung konnte nicht geprüft werden. Versuche es erneut.", "error");
+        return;
+    }
+
+    if (Object.keys(orderCart).length === 0 || (!isRestverkauf && (!orderPickupDay || !orderPickupTime))) {
         showNotification("Bestelldaten sind unvollständig.", "error");
         return;
     }
 
-    const totalPrice = Object.values(orderCart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+    if (paymentMethod === 'Guthaben') setButtonLoading(payWithBalanceBtn, true);
+    else setLoading(true);
 
-    // Ladeanimationen für die relevanten Buttons starten
-    setButtonLoading(confirmOrderBtn, true);
-    setButtonLoading(submitPaymentBtn, true);
-    
     try {
-        const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        const userFirstName = userDocSnap.exists() ? userDocSnap.data().firstName || "" : "";
-        const userLastName = userDocSnap.exists() ? userDocSnap.data().lastName || "" : "";
-        const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        const orderData = {
-            orderNumber,
-            userId: user.uid,
-            userName: user.displayName,
-            userFirstName,
-            userLastName, 
-            items: orderCart,
-            totalPrice,
-            pickupDay: orderPickupDay,
-            pickupTime: orderPickupTime,
-            timestamp: Timestamp.now(),
-            status: 'pending',
-            paymentMethod,
-            adminCompleted: false,
-            userAcknowledged: false,
-            isReported: false,
-            isPrepared: false
-        };
-
-        await addDoc(collection(db, "orders"), orderData);
-
-        checkoutModal.style.display = 'none';
-        
-        if(paymentMethod === 'Barzahlung') {
-           showNotification("Bestellung wurde erfolgreich abgeschickt!", "success");
-           resetOrder();
-           showUserOrdersPage();
+        const orderData = await createOrderObject(paymentMethod, orderCart, orderPickupDay, orderPickupTime);
+        if (isRestverkauf) {
+            await runTransaction(db, async (transaction) => {
+                for (const itemId in orderCart) {
+                    const itemRef = doc(db, "restverkaufStock", itemId);
+                    const stockDoc = await transaction.get(itemRef);
+                    if (!stockDoc.exists() || stockDoc.data().count < orderCart[itemId].quantity) {
+                        throw new Error(`Nicht genügend Bestand für "${products[itemId].name}".`);
+                    }
+                    const newCount = stockDoc.data().count - orderCart[itemId].quantity;
+                    transaction.update(itemRef, { count: newCount });
+                }
+                const newOrderRef = doc(collection(db, "orders"));
+                transaction.set(newOrderRef, orderData);
+            });
+        } else {
+            await addDoc(collection(db, "orders"), orderData);
         }
 
+        checkoutModal.style.display = 'none';
+        if (paymentMethod !== 'Online-Zahlung') {
+            showNotification("Bestellung wurde erfolgreich abgeschickt!", "success");
+            resetOrder();
+            if (isRestverkauf) checkAndDisplayRestverkauf();
+            showUserOrdersPage();
+        }
     } catch (error) {
         console.error("Fehler beim Senden der Bestellung: ", error);
-        showNotification("Ein Fehler ist aufgetreten. Bitte versuche es erneut.", "error");
+        showNotification(`Ein Fehler ist aufgetreten: ${error.message}`, "error");
     } finally {
-        // Ladeanimationen für beide Buttons beenden
-        setButtonLoading(confirmOrderBtn, false);
-        setButtonLoading(submitPaymentBtn, false);
+        setButtonLoading(payWithBalanceBtn, false);
+        setLoading(false);
     }
 }
-
 
 function showMessage(messageText) {
     paymentMessage.textContent = messageText;
@@ -2057,14 +2564,237 @@ function showMessage(messageText) {
 }
 
 function setLoading(isLoading) {
-    if (isLoading) {
-        submitPaymentBtn.disabled = true;
-        document.getElementById('spinner').style.display = 'inline';
-        document.getElementById('button-text').style.display = 'none';
+    submitPaymentBtn.disabled = isLoading;
+    document.getElementById('spinner').style.display = isLoading ? 'inline' : 'none';
+    document.getElementById('button-text').style.display = isLoading ? 'none' : 'inline';
+}
+
+favoritesHeader.addEventListener('click', () => { favoritesSection.classList.toggle('open'); });
+archivedOrdersHeader.addEventListener('click', () => { archivedOrdersSection.classList.toggle('open'); });
+
+function renderFavorites() {
+    if (!currentUserProfile || !currentUserProfile.favorites || currentUserProfile.favorites.length === 0) {
+        favoritesSection.style.display = 'none';
+        return;
+    }
+    favoritesSection.style.display = 'block';
+    favoritesList.innerHTML = '';
+    currentUserProfile.favorites.forEach(itemId => {
+        const menuItemElem = document.querySelector(`.menu-item[data-id="${itemId}"]`);
+        if (menuItemElem) {
+            const clone = menuItemElem.cloneNode(true);
+            const quantityDisplay = clone.querySelector('.quantity');
+            quantityDisplay.textContent = cart[itemId] ? cart[itemId].quantity : 0;
+            favoritesList.appendChild(clone);
+        }
+    });
+}
+
+async function toggleFavorite(itemId) {
+    if (!currentUserProfile) {
+        showNotification("Bitte melde dich an, um Favoriten zu speichern.");
+        return;
+    }
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    let currentFavorites = currentUserProfile.favorites || [];
+    const index = currentFavorites.indexOf(itemId);
+    if (index > -1) {
+        currentFavorites.splice(index, 1);
     } else {
-        submitPaymentBtn.disabled = false;
-        document.getElementById('spinner').style.display = 'none';
-        document.getElementById('button-text').style.display = 'inline';
+        currentFavorites.push(itemId);
+    }
+
+    try {
+        await updateDoc(userRef, { favorites: currentFavorites });
+        currentUserProfile.favorites = currentFavorites;
+        updateFavoriteIcons();
+        renderFavorites();
+    } catch (error) {
+        console.error("Fehler beim Speichern der Favoriten:", error);
+        showNotification("Favorit konnte nicht gespeichert werden.");
     }
 }
+
+function updateFavoriteIcons() {
+    const favoriteIds = currentUserProfile?.favorites || [];
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        const menuItem = btn.closest('.menu-item');
+        if (menuItem) {
+            const itemId = menuItem.dataset.id;
+            const icon = btn.querySelector('i');
+            const isFavorite = favoriteIds.includes(itemId);
+            btn.classList.toggle('is-favorite', isFavorite);
+            icon.classList.toggle('fa-solid', isFavorite);
+            icon.classList.toggle('fa-regular', !isFavorite);
+        }
+    });
+}
+
+function handleCartAction(itemId, action) {
+    const menuItem = document.querySelector(`.menu-item[data-id="${itemId}"]`);
+    if (!menuItem) return;
+
+    const name = menuItem.dataset.name;
+    const price = parseFloat(menuItem.dataset.price);
+
+    if (!cart[itemId]) cart[itemId] = { name, price, quantity: 0 };
+    if (action === 'plus') cart[itemId].quantity++;
+    else if (action === 'minus' && cart[itemId].quantity > 0) cart[itemId].quantity--;
+
+    if (cart[itemId].quantity === 0) delete cart[itemId];
+
+    const allItemInstances = document.querySelectorAll(`.menu-item[data-id="${itemId}"]`);
+    allItemInstances.forEach(instance => {
+        const quantityDisplay = instance.querySelector('.quantity');
+        if (quantityDisplay) quantityDisplay.textContent = cart[itemId] ? cart[itemId].quantity : 0;
+    });
+    renderCart();
+}
+
+[menuContainer, favoritesList].forEach(container => {
+    container.addEventListener('click', (e) => {
+        const target = e.target;
+        const menuItem = target.closest('.menu-item');
+        if (!menuItem) return;
+        const id = menuItem.dataset.id;
+        if (target.closest('.favorite-btn')) toggleFavorite(id);
+        else if (target.closest('.plus-btn')) handleCartAction(id, 'plus');
+        else if (target.closest('.minus-btn')) handleCartAction(id, 'minus');
+    });
+});
+
+async function checkAndDisplayRestverkauf() {
+    if (!restverkaufSection) return;
+    const now = new Date();
+    const isSaleTime = (now.getDay() === 5 && now.getHours() >= 13);
+    restverkaufSection.style.display = isSaleTime ? 'block' : 'none';
+    if (isSaleTime) renderRestverkaufItems();
+}
+
+async function renderRestverkaufItems() {
+    restverkaufItemsContainer.innerHTML = '<p style="color:white;">Lade Angebote...</p>';
+    try {
+        const stockPromises = WRAP_IDS.map(id => getDoc(doc(db, "restverkaufStock", id)));
+        const stockDocs = await Promise.all(stockPromises);
+        const stockData = {};
+        stockDocs.forEach(docSnap => {
+            stockData[docSnap.id] = docSnap.exists() ? docSnap.data().count : 0;
+        });
+
+        restverkaufItemsContainer.innerHTML = '';
+        WRAP_IDS.forEach(id => {
+            const product = products[id];
+            const stock = stockData[id] || 0;
+            const isSoldOut = stock <= 0;
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `restverkauf-item ${isSoldOut ? 'sold-out' : ''}`;
+            itemDiv.innerHTML = `
+                <div class="restverkauf-item-info">
+                    <strong>${product.name}</strong>
+                    <div class="item-price">${SALE_PRICE.toFixed(2).replace('.', ',')} €</div>
+                    <div class="item-stock">${isSoldOut ? 'Ausverkauft' : `Noch ${stock} verfügbar`}</div>
+                </div>`;
+            restverkaufItemsContainer.appendChild(itemDiv);
+        });
+    } catch (error) {
+        console.error("Fehler beim Laden des Restverkaufs:", error);
+        restverkaufItemsContainer.innerHTML = '<p style="color:white;">Angebote konnten nicht geladen werden.</p>';
+    }
+}
+
+async function renderRestverkaufAdmin() {
+    if (!adminRestverkaufContainer) return;
+    adminRestverkaufContainer.innerHTML = '<p>Lade Bestände...</p>';
+    try {
+        const stockPromises = WRAP_IDS.map(id => getDoc(doc(db, "restverkaufStock", id)));
+        const stockDocs = await Promise.all(stockPromises);
+        const stockData = {};
+        stockDocs.forEach(docSnap => {
+            if (docSnap.exists()) stockData[docSnap.id] = docSnap.data().count;
+        });
+
+        adminRestverkaufContainer.innerHTML = '';
+        WRAP_IDS.forEach(id => {
+            const product = products[id];
+            const stock = stockData[id] || 0;
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'admin-restverkauf-item';
+            itemDiv.innerHTML = `
+                <span class="admin-restverkauf-item-name">${product.name}</span>
+                <input type="number" id="stock-input-${id}" value="${stock}" min="0">
+                <button class="save-stock-btn secondary-button" data-id="${id}">Speichern</button>
+            `;
+            adminRestverkaufContainer.appendChild(itemDiv);
+        });
+    } catch (error) {
+        console.error("Fehler beim Laden der Admin-Restverkaufsdaten:", error);
+        adminRestverkaufContainer.innerHTML = '<p>Daten konnten nicht geladen werden.</p>';
+    }
+}
+
+async function saveStock(itemId) {
+    const input = document.getElementById(`stock-input-${itemId}`);
+    const count = parseInt(input.value, 10);
+    if (isNaN(count) || count < 0) {
+        showNotification("Bitte gib eine gültige, positive Zahl ein.", "error");
+        return;
+    }
+    try {
+        await setDoc(doc(db, "restverkaufStock", itemId), { count });
+        showNotification(`Bestand für "${products[itemId].name}" wurde auf ${count} gesetzt.`, 'success');
+    } catch (error) {
+        console.error("Fehler beim Speichern des Bestands:", error);
+        showNotification("Bestand konnte nicht gespeichert werden.", "error");
+    }
+}
+
+async function resetAllStock() {
+    if (!confirm("Möchtest du wirklich alle Restbestände auf 0 zurücksetzen?")) return;
+    try {
+        const resetPromises = WRAP_IDS.map(id => setDoc(doc(db, "restverkaufStock", id), { count: 0 }));
+        await Promise.all(resetPromises);
+        showNotification("Alle Restbestände wurden erfolgreich zurückgesetzt.", "success");
+        renderRestverkaufAdmin();
+    } catch (error) {
+        console.error("Fehler beim Zurücksetzen der Bestände:", error);
+        showNotification("Bestände konnten nicht zurückgesetzt werden.", "error");
+    }
+}
+
+if (adminRestverkaufContainer) {
+    adminRestverkaufContainer.addEventListener('click', e => {
+        if (e.target.matches('.save-stock-btn')) saveStock(e.target.dataset.id);
+    });
+    document.getElementById('reset-restverkauf-btn').addEventListener('click', resetAllStock);
+}
+
+verifyAccountBtn.addEventListener('click', async () => {
+    const user = auth.currentUser;
+    if (!user || !ACCOUNT_VERIFICATION_ENABLED) return;
+
+    const enteredPin = verificationPinInput.value.trim();
+    if (enteredPin.length === 0) {
+        showNotification("Bitte gib den Verifizierungs-PIN ein.", "error");
+        return;
+    }
+
+    if (enteredPin === ACCOUNT_VERIFICATION_CODE) {
+        setButtonLoading(verifyAccountBtn, true);
+        try {
+            const userDocRef = doc(db, "users", user.uid);
+            await updateDoc(userDocRef, { isVerified: true });
+            showNotification("Dein Konto wurde erfolgreich verifiziert!", "success");
+            await showProfilePage();
+        } catch (error) {
+            console.error("Fehler bei der Verifizierung:", error);
+            showNotification("Ein Fehler ist aufgetreten. Bitte versuche es erneut.", "error");
+        } finally {
+            setButtonLoading(verifyAccountBtn, false);
+        }
+    } else {
+        showNotification("Der eingegebene PIN ist falsch.", "error");
+        verificationPinInput.value = '';
+    }
+});
+
 
