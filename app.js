@@ -1825,29 +1825,23 @@ function handleEmailVerificationRedirect() {
 
     if (mode === 'verifyEmail' && actionCode) {
         applyActionCode(auth, actionCode)
-            .then(() => {
-                // Bereinigt die URL, ohne die Seite neu zu laden
-                window.history.replaceState({}, document.title, window.location.pathname);
+    .then(() => {
+        // Speichere die E-Mail, damit die Hauptseite sie nach der Weiterleitung lesen kann
+        const email = localStorage.getItem('emailForSignIn');
+        if (email) {
+            localStorage.setItem('emailVerified', email);
+            localStorage.removeItem('emailForSignIn');
+        }
+        // Leite den Benutzer zur Hauptseite weiter
+        window.location.href = 'index.html'; 
+    })
+    .catch((error) => {
+        console.error("Fehler bei der E-Mail-Verifizierung:", error);
+        alert("Der Bestätigungslink ist ungültig oder abgelaufen. Bitte versuche es erneut.");
+        // Leite den Benutzer auch im Fehlerfall zur Hauptseite
+        window.location.href = 'index.html';
+    });
 
-                const email = localStorage.getItem('emailForSignIn');
-                showNotification("Deine E-Mail-Adresse wurde erfolgreich verifiziert. Du kannst dich jetzt anmelden.", "success");
-
-                if (email) {
-                    // Öffnet das Login-Fenster und füllt die E-Mail aus
-                    openModal();
-                    loginEmailInput.value = email;
-                    loginPasswordInput.focus(); // Setzt den Fokus auf das Passwortfeld
-                    localStorage.removeItem('emailForSignIn');
-                } else {
-                    openModal(); // Fallback
-                }
-            })
-            .catch((error) => {
-                console.error("Fehler bei der E-Mail-Verifizierung:", error);
-                // Bereinigt ebenfalls die URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                showNotification("Der Bestätigungslink ist ungültig oder abgelaufen. Bitte versuche es erneut.", "error");
-            });
     }
 }
 
