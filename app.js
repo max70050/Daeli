@@ -179,6 +179,9 @@ const hamburgerMenu = document.getElementById('hamburger-menu');
 const navLinksContainer = document.getElementById('nav-links');
 const customHourSelect = document.getElementById('custom-hour-select');
 const customMinuteSelect = document.getElementById('custom-minute-select');
+const orderSearchInput = document.getElementById('order-search-input');
+const orderSearchBtn = document.getElementById('order-search-btn');
+const orderSearchResultsContainer = document.getElementById('order-search-results');
 const customHourOptions = document.getElementById('custom-hour-options');
 const customMinuteOptions = document.getElementById('custom-minute-options');
 const lengthCheck = document.getElementById('length-check');
@@ -819,6 +822,82 @@ const showProfilePage = async () => {
     }
 };
 
+
+// Füge den Event-Listener hinzu
+if (orderSearchBtn) {
+    orderSearchBtn.addEventListener('click', handleOrderSearch);
+}
+
+// Funktion zum Suchen der Bestellung
+async function handleOrderSearch() {
+    const orderNumber = orderSearchInput.value.trim();
+    if (orderNumber.length !== 6) {
+        showNotification("Bitte gib eine gültige, 6-stellige Bestellnummer ein.", "error");
+        return;
+    }
+
+    orderSearchResultsContainer.innerHTML = '<p>Suche nach Bestellung...</p>';
+
+    try {
+        const q = query(collection(db, "orders"), where("orderNumber", "==", orderNumber));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            orderSearchResultsContainer.innerHTML = `<p>Keine Bestellung mit der Nummer ${orderNumber} gefunden.</p>`;
+        } else {
+            const orderDoc = querySnapshot.docs[0];
+            renderOrderSearchResults({ id: orderDoc.id, ...orderDoc.data() });
+        }
+    } catch (error) {
+        console.error("Fehler bei der Bestellungssuche:", error);
+        orderSearchResultsContainer.innerHTML = '<p>Bei der Suche ist ein Fehler aufgetreten.</p>';
+        showNotification("Fehler bei der Suche.", "error");
+    }
+}
+
+// Funktion zum Anzeigen des Suchergebnisses
+function renderOrderSearchResults(order) {
+    orderSearchResultsContainer.innerHTML = ""; // Leert vorherige Ergebnisse
+
+    const orderDate = order.timestamp.toDate();
+    const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
+    const fullName = [order.userFirstName, order.userLastName].filter(Boolean).join(' ') || order.userName;
+    const itemsHtml = Object.values(order.items).map(item =>
+        `<li><span>${item.quantity}x ${item.name}</span> <span>${(item.price * item.quantity).toFixed(2).replace('.', ',')} €</span></li>`
+    ).join('');
+
+    const orderCard = document.createElement('div');
+    orderCard.className = 'order-card';
+    if (order.isPaid) orderCard.classList.add('paid');
+    if (order.isPrepared) orderCard.classList.add('prepared');
+
+    orderCard.innerHTML = `
+        <div class="order-header">
+            <div class="order-header-info">
+                <strong>Bestellnr: ${order.orderNumber}</strong>
+                <span>${formattedDate}</span>
+            </div>
+            <div class="order-user-info">
+                <span>Bestellt von:</span>
+                <strong>${fullName}</strong>
+            </div>
+            <div class="order-pickup-time">
+                <span>Abholung am ${order.pickupDay} um:</span>
+                <strong>${order.pickupTime} Uhr</strong>
+            </div>
+        </div>
+        <div class="order-items-container">
+             <p><strong>Inhalt:</strong></p>
+             <ul class="order-items-list">${itemsHtml}</ul>
+        </div>
+        <div class="order-footer">
+             <div class="order-total">Gesamt: ${order.totalPrice.toFixed(2).replace('.', ',')} €</div>
+             <span>Status: ${order.adminCompleted ? 'Abgeschlossen' : 'Offen'}</span>
+        </div>
+    `;
+
+    orderSearchResultsContainer.appendChild(orderCard);
+}
 async function checkForTopUpSuccess() {
     const params = new URLSearchParams(window.location.search);
     const user = auth.currentUser;
@@ -887,8 +966,7 @@ const populateMinutes = (isFourteen = false) => {
     customMinuteOptions.innerHTML = '';
     const minutes = isFourteen ? ['00'] : ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
     const now = new Date();
-    const currentDayIndex = now.getDay();
-    const isToday = selectedPickupDay === dayMapping[currentDayIndex];
+    const isToday = selectedPickupDay === dayMapping[now.getDay()];
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const selectedHour = parseInt(customHourSelect.getAttribute('data-value'), 10);
@@ -898,7 +976,21 @@ const populateMinutes = (isFourteen = false) => {
         optionDiv.classList.add('custom-option');
         optionDiv.dataset.value = m;
         optionDiv.textContent = m;
-        if (isToday && selectedHour === currentHour && parseInt(m, 10) < currentMinute) {
+
+        const minuteValue = parseInt(m, 10);
+        let isDisabled = false;
+
+
+        if (selectedHour === 11 && minuteValue < 20) {
+            isDisabled = true;
+        }
+
+        if (isToday && selectedHour === currentHour && minuteValue <= currentMinute) {
+            isDisabled = true;
+        }
+        
+       
+        if (isDisabled) {
             optionDiv.classList.add('disabled');
         }
         customMinuteOptions.appendChild(optionDiv);
@@ -930,6 +1022,7 @@ const renderCart = () => {
     const maxOrderValueNotice = document.getElementById('max-order-value-notice');
     const selectDayNotice = document.getElementById('select-day-notice');
     const selectTimeNotice = document.getElementById('select-time-notice');
+    const timeLimitNotice = document.getElementById('time-limit-notice');
     profileCompletionNotice.innerHTML = '';
 
     let totalPrice = 0;
@@ -946,8 +1039,8 @@ const renderCart = () => {
             const itemTotal = item.price * item.quantity;
             totalPrice += itemTotal;
             const li = document.createElement('li');
-            li.className = 'cart-item';
-            li.innerHTML = `
+li.className = 'cart-item';
+li.innerHTML = `
                 <div class="cart-item-details">
                     <span class="cart-item-name">${item.name}</span>
                     <span class="cart-item-price">${itemTotal.toFixed(2).replace('.', ',')} €</span>
@@ -959,7 +1052,7 @@ const renderCart = () => {
                     <button class="cart-remove-btn" data-id="${id}"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             `;
-            cartItemsList.appendChild(li);
+cartItemsList.appendChild(li);
         });
     }
 
@@ -971,6 +1064,8 @@ const renderCart = () => {
     let maxOrderNoticeVisible = false;
     let dayNoticeVisible = false;
     let timeNoticeVisible = false;
+    let timeLimitNoticeVisible = false;
+    let timeLimitMessage = ''; // Wir nutzen eine Variable für die Nachricht
 
     const hour = customHourSelect.getAttribute('data-value');
     const minute = customMinuteSelect.getAttribute('data-value');
@@ -985,6 +1080,37 @@ const renderCart = () => {
         if (!hour || !minute) {
             timeNoticeVisible = true;
             isButtonDisabled = true;
+        }
+
+        if (selectedPickupDay && hour && minute) {
+            const now = new Date();
+            const isToday = selectedPickupDay === dayMapping[now.getDay()];
+
+          
+            if (isToday && parseInt(hour, 10) === 11 && parseInt(minute, 10) < 20) {
+                timeLimitMessage = 'Bestellungen sind heute erst ab 11:20 Uhr möglich.';
+                timeLimitNoticeVisible = true;
+                isButtonDisabled = true;
+            } else {
+              
+                const pickupDate = new Date();
+                const dayIndex = dayIndexMapping[selectedPickupDay];
+                const currentDayIndex = now.getDay();
+                let daysToAdd = dayIndex - currentDayIndex;
+                if (daysToAdd < 0) {
+                    daysToAdd += 7;
+                }
+                pickupDate.setDate(now.getDate() + daysToAdd);
+                pickupDate.setHours(parseInt(hour, 10), parseInt(minute, 10), 0, 0);
+
+                const diffInMinutes = (pickupDate.getTime() - now.getTime()) / (1000 * 60);
+
+                if (diffInMinutes < 45) {
+                    timeLimitMessage = 'Die Bestellung muss mindestens 45 Minuten vor Abholung erfolgen.';
+                    timeLimitNoticeVisible = true;
+                    isButtonDisabled = true;
+                }
+            }
         }
     }
 
@@ -1011,6 +1137,13 @@ const renderCart = () => {
     maxOrderValueNotice.style.display = maxOrderNoticeVisible ? 'block' : 'none';
     selectDayNotice.style.display = dayNoticeVisible ? 'block' : 'none';
     selectTimeNotice.style.display = timeNoticeVisible ? 'block' : 'none';
+    
+    
+    if (timeLimitNoticeVisible) {
+        timeLimitNotice.textContent = timeLimitMessage;
+    }
+    timeLimitNotice.style.display = timeLimitNoticeVisible ? 'block' : 'none';
+    
     checkoutBtn.disabled = isButtonDisabled;
 };
 
@@ -2796,5 +2929,3 @@ verifyAccountBtn.addEventListener('click', async () => {
         verificationPinInput.value = '';
     }
 });
-
-

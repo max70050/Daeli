@@ -37,8 +37,6 @@
 
     <main id="welcome-section" class="welcome-section">
         <div class="welcome-content">
-            
-            
             <h1>Willkommen bei dæli</h1>
             <p><small><strong>Funktioniert im Schul-WLAN nicht immer</strong></small></p>
             <p>Dein Essen, nur einen Klick entfernt. Bestelle jetzt einfach online vor und spare Zeit in den Pausen.</p>
@@ -283,7 +281,7 @@
                         <button data-day="Donnerstag">Do</button>
                         <button data-day="Freitag">Fr</button>
                     </div>
-                    <small class="week-notice">Bestellungen sind nur für die aktuelle Woche möglich. Ab Samstag für die Folgewoche.<br> Bestellung sind bis 45min vor Abholung möglich!</small>
+                    <small class="week-notice">Bestellungen sind nur für die aktuelle Woche möglich. Ab Samstag für die Folgewoche.<br> Bestellung sind bis 45min vor Abholungmöglich!</small>
                 </div>
                 <div class="pickup-time-picker">
                     <label>Gewünschte Abholzeit:</label>
@@ -309,10 +307,11 @@
                 <div id="cart-notices">
                     <div id="select-day-notice" class="cart-notice" style="display: none;">Bitte wähle einen Abholtag.</div>
                     <div id="select-time-notice" class="cart-notice" style="display: none;">Bitte wähle eine Abholzeit.</div>
+                    <div id="time-limit-notice" class="cart-notice" style="display: none;"></div>
                     <div id="profile-completion-notice" class="cart-notice" style="display: none;"></div>
                     <div id="max-order-value-notice" class="cart-notice" style="display: none;"></div>
                 </div>
-               <p><small>Da dies noch die Testversion ist wird deine Bestellung noch nicht bearbeitet.</small></p>
+               
                 <button id="checkout-btn" class="cta-button" disabled>Bestellung abschließen</button>
             </div>
         </div>
@@ -404,7 +403,7 @@
             <h3>Konto löschen</h3>
             <br>
             <div class="profile-card danger-zone">
-                <p class="danger-zone-text">Wenn du dein Konto löschst, werden alle deine Daten endgültig gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden. Hierbei werden auch deine bereits gesendeten Bestellungen ohne Recht auf Erstattung gelöscht!</p>
+                <p class="danger-zone-text">Wenn du dein Konto löschst, werden alle deine Daten endgültig gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.</p>
                 <button id="delete-account-btn" class="danger-button">Konto löschen</button>
             </div>
         </div>
@@ -487,7 +486,7 @@
             </div>
 
             <div class="sub-section">
-                <h2>Restverkauf verwalten (Freitag ab 13 Uhr sichtbar)</h2>
+                <h2>Restverkauf verwalten (Freitag ab 13 Uhr)</h2>
                 <p>Lege hier die Stückzahlen für den Restverkauf fest. Setze die Zahlen am Abend oder Samstag wieder auf 0 zurück.</p>
                 <div id="admin-restverkauf-container">
                 </div>
@@ -523,6 +522,19 @@
                     <p>Hier werden gemeldete Bestellungen zur Überprüfung angezeigt.</p>
                 </div>
             </div>
+
+<div class="sub-section">
+                <h2>Bestellung suchen</h2>
+                <p>Suche nach einer bestimmten Bestellung über die 6-stellige Bestellnummer.</p>
+                <div class="user-search-form">
+                    <input type="text" id="order-search-input" placeholder="Bestellnummer eingeben..." maxlength="6">
+                    <button id="order-search-btn" class="cta-button">Suchen</button>
+                </div>
+                <div id="order-search-results">
+                    </div>
+            </div>
+            <div class="sub-section">
+                <h2>Gemeldete Bestellungen</h2>
 
             <div class="sub-section">
                 <h2>Bestellungen</h2>
@@ -727,7 +739,7 @@
         <div class="footer-content">
             <div class="footer-section">
                 <h4>Abholzeiten</h4>
-                <p>Montag - Freitag: <br>11:00 - 14:00 Uhr</p>
+                <p>Montag - Freitag: <br>11:20 - 14:00 Uhr</p>
             </div>
             <div class="footer-section">
                 <h4>Support </h4>
@@ -755,17 +767,4 @@
 
     <script type="module" src="app.js"></script>
 </body>
-
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
