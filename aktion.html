@@ -3,23 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dæli-Gruenwald - Aktion wird verarbeitet</title>
-    <script src="https://js.stripe.com/v3/"></script>
+    <title>Konto verifizieren - Dæli-Gruenwald</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        body { font-family: 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f5f5f5; color: #333; }
-        .container { text-align: center; }
-        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #6a6a43; animation: spin 1s ease infinite; margin: 0 auto 20px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Zusätzliche Stile für eine saubere Ladeansicht */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .message-box {
+            padding: 40px;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .message-box h1 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+        .message-box p {
+            font-size: 1.1em;
+            color: #666;
+        }
     </style>
-</style>
 </head>
 <body>
-    <div class="container">
-        <div class="spinner"></div>
-        <p>Bitte warte, deine Aktion wird verarbeitet...</p>
-        <p>Du wirst in Kürze weitergeleitet.</p>
+
+    <div class="message-box">
+        <h1 id="message-title">E-Mail wird verifiziert...</h1>
+        <p id="message-text">Bitte einen Moment Geduld. Du wirst gleich weitergeleitet.</p>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <script type="module">
+        // Importiere die notwendigen Firebase Module
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, applyActionCode } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // Deine Firebase Konfiguration (dieselbe wie in app.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNXQuFW6SLR_w5x1NxlLScp17LjppAuCA",
+            authDomain: "schulmensa-9de80.firebaseapp.com",
+            projectId: "schulmensa-9de80",
+            storageBucket: "schulmensa-9de80.firebasestorage.app",
+            messagingSenderId: "930393675999",
+            appId: "1:930393675999:web:cb4bb79f7a448b86efb16a",
+            measurementId: "G-5TXS661SFP"
+        };
+
+        // Firebase initialisieren
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // UI-Elemente für Feedback
+        const messageTitle = document.getElementById('message-title');
+        const messageText = document.getElementById('message-text');
+
+        // Funktion, um Parameter aus der URL zu lesen
+        function getParameterByName(name) {
+            const url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+            const results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        // Führe die Aktion aus, sobald die Seite geladen ist
+        window.onload = function() {
+            const actionCode = getParameterByName('oobCode');
+
+            if (actionCode) {
+                // `applyActionCode` anwenden, um die E-Mail zu verifizieren
+                applyActionCode(auth, actionCode)
+                    .then(() => {
+                        // Erfolgsmeldung anzeigen
+                        messageTitle.textContent = 'Erfolgreich verifiziert!';
+                        messageText.textContent = 'Dein Konto ist jetzt aktiv. Du wirst in 3 Sekunden angemeldet und weitergeleitet.';
+                        
+                        // Nach 3 Sekunden zur Hauptseite weiterleiten
+                        setTimeout(() => {
+                            window.location.href = '/'; // Leitet zur Startseite (index.html)
+                        }, 3000);
+                    })
+                    .catch((error) => {
+                        // Fehlermeldung anzeigen
+                        console.error(error);
+                        messageTitle.textContent = 'Verifizierung fehlgeschlagen';
+                        messageText.textContent = 'Der Link ist möglicherweise ungültig oder abgelaufen. Bitte versuche, dich anzumelden oder die Verifizierungs-E-Mail erneut zu senden.';
+                    });
+            } else {
+                 // Fallback, falls kein Code in der URL ist
+                 messageTitle.textContent = 'Fehler';
+                 messageText.textContent = 'Es wurde kein Verifizierungscode gefunden.';
+            }
+        };
+    </script>
+
 </body>
 </html>
