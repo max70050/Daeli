@@ -29,11 +29,12 @@ import {
     orderBy,
     getDocs,
     Timestamp,
-    runTransaction
+    runTransaction,
+    writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const ACCOUNT_VERIFICATION_ENABLED = true;
-const ACCOUNT_VERIFICATION_CODE = "00000000";
+
 
 const firebaseConfig = {
     apiKey: "AIzaSyCNXQuFW6SLR_w5x1NxlLScp17LjppAuCA",
@@ -649,7 +650,7 @@ const handleGoogleAuth = async () => {
     } catch (error) {
         console.error("Google Authentifizierungsfehler:", error);
         if (error.code === 'auth/popup-closed-by-user') {
-            // No error shown
+            
         } else if (error.code === 'auth/account-exists-with-different-credential') {
             showNotification('Ein Konto mit dieser E-Mail existiert bereits. Bitte melde dich normal an.');
         } else {
@@ -823,12 +824,12 @@ const showProfilePage = async () => {
 };
 
 
-// Füge den Event-Listener hinzu
+
 if (orderSearchBtn) {
     orderSearchBtn.addEventListener('click', handleOrderSearch);
 }
 
-// Funktion zum Suchen der Bestellung
+
 async function handleOrderSearch() {
     const orderNumber = orderSearchInput.value.trim();
     if (orderNumber.length !== 6) {
@@ -855,9 +856,9 @@ async function handleOrderSearch() {
     }
 }
 
-// Funktion zum Anzeigen des Suchergebnisses
+
 function renderOrderSearchResults(order) {
-    orderSearchResultsContainer.innerHTML = ""; // Leert vorherige Ergebnisse
+    orderSearchResultsContainer.innerHTML = ""; 
 
     const orderDate = order.timestamp.toDate();
     const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
@@ -1065,7 +1066,7 @@ cartItemsList.appendChild(li);
     let dayNoticeVisible = false;
     let timeNoticeVisible = false;
     let timeLimitNoticeVisible = false;
-    let timeLimitMessage = ''; // Wir nutzen eine Variable für die Nachricht
+    let timeLimitMessage = ''; 
 
     const hour = customHourSelect.getAttribute('data-value');
     const minute = customMinuteSelect.getAttribute('data-value');
@@ -2905,27 +2906,54 @@ verifyAccountBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
     if (!user || !ACCOUNT_VERIFICATION_ENABLED) return;
 
-    const enteredPin = verificationPinInput.value.trim();
+    const enteredPin = verificationPinInput.value.trim().toUpperCase();
     if (enteredPin.length === 0) {
-        showNotification("Bitte gib den Verifizierungs-PIN ein.", "error");
+        showNotification("Bitte gib deinen 8-stelligen Verifizierungs-Code ein.", "error");
         return;
     }
 
-    if (enteredPin === ACCOUNT_VERIFICATION_CODE) {
-        setButtonLoading(verifyAccountBtn, true);
-        try {
-            const userDocRef = doc(db, "users", user.uid);
-            await updateDoc(userDocRef, { isVerified: true });
-            showNotification("Dein Konto wurde erfolgreich verifiziert!", "success");
-            await showProfilePage();
-        } catch (error) {
-            console.error("Fehler bei der Verifizierung:", error);
-            showNotification("Ein Fehler ist aufgetreten. Bitte versuche es erneut.", "error");
-        } finally {
-            setButtonLoading(verifyAccountBtn, false);
-        }
-    } else {
-        showNotification("Der eingegebene PIN ist falsch.", "error");
-        verificationPinInput.value = '';
+    setButtonLoading(verifyAccountBtn, true);
+
+    
+    const codeRef = doc(db, "verificationCodes", enteredPin);
+    const userRef = doc(db, "users", user.uid);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const codeDoc = await transaction.get(codeRef);
+            const userDoc = await transaction.get(userRef);
+
+            if (!codeDoc.exists()) {
+                throw new Error("Dieser Code ist ungültig.");
+            }
+            if (codeDoc.data().isUsed) {
+                throw new Error("Dieser Code wurde bereits verwendet.");
+            }
+            if (userDoc.data().isVerified) {
+                
+                throw new Error("Dein Konto ist bereits verifiziert."); 
+            }
+
+            transaction.update(codeRef, {
+                isUsed: true,
+                redeemedBy: user.uid,
+                redeemedAt: Timestamp.now()
+            });
+            transaction.update(userRef, {
+                isVerified: true
+            });
+        });
+
+        showNotification("Dein Konto wurde erfolgreich verifiziert!", "success");
+        await showProfilePage(); 
+
+    } catch (error) {
+        console.error("Fehler bei der Verifizierung:", error);
+        
+        showNotification(error.message, "error"); 
+        verificationPinInput.value = ''; 
+    } finally {
+        setButtonLoading(verifyAccountBtn, false);
     }
 });
+
