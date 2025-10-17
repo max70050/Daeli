@@ -2901,12 +2901,11 @@ if (adminRestverkaufContainer) {
     });
     document.getElementById('reset-restverkauf-btn').addEventListener('click', resetAllStock);
 }
-
 verifyAccountBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
     if (!user || !ACCOUNT_VERIFICATION_ENABLED) return;
 
-    const enteredPin = verificationPinInput.value.trim().toUpperCase();
+    const enteredPin = verificationPinInput.value.trim().toUpperCase(); 
     if (enteredPin.length === 0) {
         showNotification("Bitte gib deinen 8-stelligen Verifizierungs-Code ein.", "error");
         return;
@@ -2914,7 +2913,6 @@ verifyAccountBtn.addEventListener('click', async () => {
 
     setButtonLoading(verifyAccountBtn, true);
 
-    
     const codeRef = doc(db, "verificationCodes", enteredPin);
     const userRef = doc(db, "users", user.uid);
 
@@ -2930,7 +2928,6 @@ verifyAccountBtn.addEventListener('click', async () => {
                 throw new Error("Dieser Code wurde bereits verwendet.");
             }
             if (userDoc.data().isVerified) {
-                
                 throw new Error("Dein Konto ist bereits verifiziert."); 
             }
 
@@ -2945,15 +2942,31 @@ verifyAccountBtn.addEventListener('click', async () => {
         });
 
         showNotification("Dein Konto wurde erfolgreich verifiziert!", "success");
-        await showProfilePage(); 
+        
+        if (currentUserProfile) {
+            currentUserProfile.isVerified = true;
+        }
 
+        const verificationCard = document.getElementById('verification-card');
+        const verificationStatusDisplay = document.getElementById('verification-status-display');
+        
+        if (verificationCard) {
+            verificationCard.style.display = 'none';
+        }
+        if (verificationStatusDisplay) {
+            verificationStatusDisplay.innerHTML = `
+                <h2>Kontostatus</h2>
+                <p style="color: var(--success); font-weight: 600;">Dein Konto ist verifiziert. <i class="fa-solid fa-check-circle"></i></p>
+            `;
+            verificationStatusDisplay.style.display = 'block';
+        }
+      
     } catch (error) {
         console.error("Fehler bei der Verifizierung:", error);
-        
+       
         showNotification(error.message, "error"); 
         verificationPinInput.value = ''; 
     } finally {
         setButtonLoading(verifyAccountBtn, false);
     }
 });
-
