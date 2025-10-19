@@ -2569,3 +2569,18 @@ html.dark-mode .custom-option.disabled:hover {
     background-color: #222;
     color: #555;
 }
+
+/* --- NEU: Korrektur für Admintools auf kleinen Bildschirmen --- */
+
+@media screen and (max-width: 500px) {
+    /* Zielt auf die Formulare in den Admintools (Bestellsuche, Datum verwalten) */
+    #admintools-section .user-search-form {
+        flex-direction: column; /* Stapelt die Elemente vertikal */
+        align-items: stretch;   /* Dehnt die Elemente auf die volle Breite */
+    }
+
+    #admintools-section .user-search-form input,
+    #admintools-section .user-search-form button {
+        width: 100%; /* Stellt sicher, dass sie die verfügbare Breite nutzen */
+    }
+}
