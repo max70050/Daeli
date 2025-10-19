@@ -38,7 +38,7 @@
     <main id="welcome-section" class="welcome-section">
         <div class="welcome-content">
             <h1>Willkommen bei dæli</h1>
-            <p><small><strong>Funktioniert im Schul-WLAN nicht immer</strong></small></p>
+            <p><small><strong>Funktioniert im Schul-WLAN nicht immer.</strong></small></p>
             <p>Dein Essen, nur einen Klick entfernt. Bestelle jetzt einfach online vor und spare Zeit in den Pausen.</p>
             <button class="cta-button" id="order-cta-button">Jetzt bestellen</button>
         </div>
@@ -60,21 +60,20 @@
                 <div class="restverkauf-header">
                     <h2><i class="fa-solid fa-bolt"></i> Freitags-Restverkauf!</h2>
                     <p>Alle Wraps nur 1,50 €! Nur für sofortige Abholung und solange der Vorrat reicht.</p>
-                    <p>Nur vor Ort erhältlich.</p>
+                    <p>Nur vor Ort, gegen Barzahlung erhältlich.</p>
                 </div>
                 <div id="restverkauf-items-container">
                 </div>
             </div>
             <div class="pdf-menu-link-container">
-                <p>Hier findest du unsere vollständige Speisekarte mit allen Snacks und Getränken, die du direkt vor Ort kaufen kannst.</p>
+                <p>Hier findest du unsere vollständige Speisekarte mit allen Snacks und Getränken, die du direkt vor Ort kaufen kannst. Außerdem findest du hier auch alle Infos zu Allergen und Zusatzstoffen.</p>
                 <a href="./speisekarte.pdf" target="_blank" class="cta-button secondary-button">
                     <i class="fa-solid fa-file-pdf"></i>
                     Vollständige Speisekarte ansehen
                 </a>
             </div>
 
-            <p>Bei Fragen wegen Allergien, etc. wende dich bitte an das Schülercafé oder den Kiosk</p>
-            <br>
+          
 
             <div class="menu-category">
                 <h2>Wraps</h2>
@@ -304,13 +303,14 @@
                     </div>
                 </div>
                 
-                <div id="cart-notices">
-                    <div id="select-day-notice" class="cart-notice" style="display: none;">Bitte wähle einen Abholtag.</div>
-                    <div id="select-time-notice" class="cart-notice" style="display: none;">Bitte wähle eine Abholzeit.</div>
-                    <div id="time-limit-notice" class="cart-notice" style="display: none;"></div>
-                    <div id="profile-completion-notice" class="cart-notice" style="display: none;"></div>
-                    <div id="max-order-value-notice" class="cart-notice" style="display: none;"></div>
-                </div>
+            <div id="cart-notices">
+    <div id="select-day-notice" class="cart-notice" style="display: none;">Bitte wähle einen Abholtag.</div>
+    <div id="select-time-notice" class="cart-notice" style="display: none;">Bitte wähle eine Abholzeit.</div>
+    <div id="time-limit-notice" class="cart-notice" style="display: none;"></div>
+    <div id="sold-out-notice" class="cart-notice" style="display: none;"></div>
+    <div id="profile-completion-notice" class="cart-notice" style="display: none;"></div>
+    <div id="max-order-value-notice" class="cart-notice" style="display: none;"></div>
+</div>
                
                 <button id="checkout-btn" class="cta-button" disabled>Bestellung abschließen</button>
             </div>
@@ -381,6 +381,32 @@
             </div>
             
             <div class="profile-card">
+                <h2>Darstellung</h2>
+                <p class="theme-switcher-description">Wähle dein bevorzugtes Farbschema.</p>
+                <div class="theme-switcher">
+                    <div class="theme-option">
+                        <input type="radio" id="theme-light" name="theme" value="light">
+                        <label for="theme-light">
+                            <i class="fa-solid fa-sun"></i>
+                            <span>Hell</span>
+                        </label>
+                    </div>
+                    <div class="theme-option">
+                        <input type="radio" id="theme-dark" name="theme" value="dark">
+                        <label for="theme-dark">
+                            <i class="fa-solid fa-moon"></i>
+                            <span>Dunkel</span>
+                        </label>
+                    </div>
+                    <div class="theme-option">
+                        <input type="radio" id="theme-system" name="theme" value="system">
+                        <label for="theme-system">
+                            <i class="fa-solid fa-desktop"></i>
+                            <span>System</span>
+                        </label>
+                    </div>
+                </div>
+                <br>
                 <h2>Guthaben</h2>
                 <div class="balance-display">
                     <span>Aktuelles Guthaben:</span>
@@ -478,6 +504,14 @@
                 </div>
             </div>
 
+<div class="sub-section">
+                <h2>Top Produkte (Letzte 7 Tage)</h2>
+                <p>Eine Rangliste der meistverkauften Produkte der letzten 7 Tage.</p>
+                <div id="product-leaderboard-container">
+                    <p>Lade Ranking...</p>
+                </div>
+            </div>
+
             <div class="sub-section">
                 <h2>Speisekarte verwalten</h2>
                 <p>Markiere Artikel als "Ausverkauft". Diese können dann von Nutzern nicht mehr bestellt werden.</p>
@@ -496,7 +530,21 @@
                     </button>
                 </div>
             </div>
-        
+
+        <div class="sub-section">
+                <h2>Bestelltage verwalten</h2>
+                <p>Sperre einzelne Tage (z.B. Feiertage) für zukünftige Bestellungen. Gesperrte Tage können im Kalender nicht ausgewählt werden.</p>
+                <div class="user-search-form">
+                    <input type="date" id="disable-date-input" style="padding: 12px; border-radius: 10px; border: 1px solid var(--line); font-family: inherit; background: #fafafa; flex-grow: 1;">
+                    <button id="disable-date-btn" class="danger-button" style="width: auto; flex-shrink: 0;">Tag sperren</button>
+                    <button id="enable-date-btn" class="secondary-button" style="width: auto; flex-shrink: 0;">Tag freigeben</button>
+                </div>
+                <h3>Aktuell gesperrte Tage:</h3>
+                <div id="disabled-days-list">
+                    <p>Lade gesperrte Tage...</p>
+                </div>
+            </div>
+
             <div class="sub-section user-management-section">
                 <h2>Nutzerverwaltung</h2>
                 <h3>Nutzer bitte nur <strong>nach Absprache</strong> mit Mäxle sperren!</h3>
@@ -533,8 +581,7 @@
                 <div id="order-search-results">
                     </div>
             </div>
-            <div class="sub-section">
-                <h2>Gemeldete Bestellungen</h2>
+            
 
             <div class="sub-section">
                 <h2>Bestellungen</h2>

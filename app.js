@@ -1,3 +1,42 @@
+// --- NEU: Dark Mode Logik (ganz oben in app.js einfügen) ---
+
+const systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+
+/**
+ * Wendet das Theme auf das <html>-Element an und aktualisiert die Radio-Buttons.
+ * @param {string} theme - 'light', 'dark', or 'system'
+ */
+const applyThemeAndCheckRadios = (theme) => {
+    // 1. Theme anwenden
+    if (theme === 'system') {
+        document.documentElement.classList.toggle('dark-mode', systemThemeMedia.matches);
+    } else if (theme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+    } else {
+        document.documentElement.classList.remove('dark-mode');
+    }
+
+    // 2. Radio-Buttons aktualisieren (falls sie geladen sind)
+    const radio = document.querySelector(`.theme-switcher input[name="theme"][value="${theme}"]`);
+    if (radio) {
+        radio.checked = true;
+    }
+};
+
+/**
+ * Speichert die Auswahl und wendet das Theme an.
+ * @param {string} theme - 'light', 'dark', or 'system'
+ */
+const saveAndApplyTheme = (theme) => {
+    localStorage.setItem('theme', theme);
+    applyThemeAndCheckRadios(theme);
+};
+
+// --- Sofortige Theme-Anwendung (Flash of Unstyled Content verhindern) ---
+const initialTheme = localStorage.getItem('theme') || 'system';
+applyThemeAndCheckRadios(initialTheme);
+
+// --- ENDE NEUER CODE (OBEN EINFÜGEN) ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getAuth,
@@ -240,7 +279,7 @@ const validateGoogleRegistration = () => {
 googleUsernameInput.addEventListener('input', validateGoogleRegistration);
 googleAgbCheckbox.addEventListener('change', validateGoogleRegistration);
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (history.scrollRestoration) {
         history.scrollRestoration = 'manual';
     }
@@ -258,9 +297,33 @@ document.addEventListener('DOMContentLoaded', () => {
         cookieBanner.classList.remove('show');
     });
 
+    const themeRadios = document.querySelectorAll('.theme-switcher input[name="theme"]');
+    
+    // Initialen Status der Radio-Buttons beim Laden der Seite setzen
+    const storedTheme = localStorage.getItem('theme') || 'system';
+    applyThemeAndCheckRadios(storedTheme);
+
+    // Listener für Radio-Button-Klicks
+    themeRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.checked) {
+                saveAndApplyTheme(radio.value);
+            }
+        });
+    });
+
+    // Listener für System-Änderungen (z.B. Sonnenuntergang)
+    systemThemeMedia.addEventListener('change', (e) => {
+        const currentThemeSetting = localStorage.getItem('theme') || 'system';
+        // Nur anwenden, wenn der Nutzer "System" ausgewählt hat
+        if (currentThemeSetting === 'system') {
+            document.documentElement.classList.toggle('dark-mode', e.matches);
+        }
+    });
+
     setupCustomSelect(customHourSelect);
     setupCustomSelect(customMinuteSelect);
-    setupDaySelector();
+    await setupDaySelector();
     setupOrderTabs();
     checkStatus();
     setupInputValidation();
@@ -484,36 +547,89 @@ function setupCustomSelect(selectElement) {
     });
 }
 
-function setupDaySelector() {
+async function fetchDisabledDays() {
+    const disabledDaysSet = new Set();
+    try {
+        const q = query(collection(db, "disabledDays"), where("isDisabled", "==", true));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+            disabledDaysSet.add(doc.id); // doc.id ist 'YYYY-MM-DD'
+        });
+    } catch (error) {
+        console.error("Fehler beim Abrufen gesperrter Tage:", error);
+    }
+    return disabledDaysSet;
+}
+
+async function setupDaySelector() {
     const today = new Date();
-    const currentDayIndex = today.getDay();
+    const currentDayIndex = today.getDay(); // 0 = Sonntag, 1 = Montag, ... 6 = Samstag
     const buttons = pickupDaySelector.querySelectorAll('button');
     let defaultDaySet = false;
 
+    const disabledDays = await fetchDisabledDays();
+
     buttons.forEach(button => {
         const buttonDay = button.dataset.day;
-        const buttonDayIndex = dayIndexMapping[buttonDay];
+        const buttonDayIndex = dayIndexMapping[buttonDay]; // 1 = Mo, 2 = Di, ...
         button.classList.remove('active');
         button.disabled = false;
 
-        if (currentDayIndex > 5 || currentDayIndex === 0) {
-            if (buttonDayIndex === 1 && !defaultDaySet) {
-                button.classList.add('active');
-                selectedPickupDay = buttonDay;
-                defaultDaySet = true;
-            }
-        } else {
-            if (buttonDayIndex < currentDayIndex) {
-                button.disabled = true;
-            } else {
-                if (!defaultDaySet) {
+        const targetDate = new Date(today);
+        let daysToAdd = 0;
+
+        if (currentDayIndex === 6) { // Heute ist Samstag
+            daysToAdd = (buttonDayIndex - 6) + 7; // (1-6)+7 = 2 (für Montag)
+        } else if (currentDayIndex === 0) { // Heute ist Sonntag
+            daysToAdd = buttonDayIndex; // 1 (für Montag)
+        } else { // Es ist unter der Woche
+             if (buttonDayIndex < currentDayIndex) {
+                daysToAdd = (buttonDayIndex - currentDayIndex) + 7; // zB. Mi(3) -> Mo(1): (1-3)+7 = 5
+             } else {
+                daysToAdd = buttonDayIndex - currentDayIndex; // zB. Mi(3) -> Do(4): 4-3 = 1
+             }
+        }
+        targetDate.setDate(today.getDate() + daysToAdd);
+        const dateString = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        if (disabledDays.has(dateString)) {
+            button.disabled = true;
+        }
+
+        if (!button.disabled) {
+            if (currentDayIndex > 5 || currentDayIndex === 0) { // Wochenende
+                if (buttonDayIndex === 1 && !defaultDaySet) {
                     button.classList.add('active');
                     selectedPickupDay = buttonDay;
                     defaultDaySet = true;
                 }
+            } else { // Unter der Woche
+                if (buttonDayIndex < currentDayIndex) {
+                    button.disabled = true; // Vergangene Tage dieser Woche
+                } else {
+                    if (!defaultDaySet) {
+                        button.classList.add('active');
+                        selectedPickupDay = buttonDay;
+                        defaultDaySet = true;
+                    }
+                }
             }
         }
     });
+    
+    if (defaultDaySet && pickupDaySelector.querySelector('button.active').disabled) {
+        defaultDaySet = false;
+        selectedPickupDay = null;
+        pickupDaySelector.querySelector('button.active').classList.remove('active');
+        for (const btn of buttons) {
+            if (!btn.disabled) {
+                btn.classList.add('active');
+                selectedPickupDay = btn.dataset.day;
+                defaultDaySet = true;
+                break;
+            }
+        }
+    }
 
     populateHours();
     populateMinutes();
@@ -712,7 +828,7 @@ const showOrderPage = async () => {
     }
 };
 
-const showUserOrdersPage = () => {
+const showUserOrdersPage = async () => {
     if (auth.currentUser) {
         showPage(userOrdersSection);
         const today = new Date().getDay();
@@ -722,10 +838,11 @@ const showUserOrdersPage = () => {
         tabs.querySelector(`[data-day="${defaultDay}"]`).classList.add('active');
         renderUserOrders(defaultDay);
         renderArchivedOrders();
+        
     } else {
         openModal();
     }
-    setupDaySelector();
+    await setupDaySelector();
 };
 
 const showManagementOrdersPage = () => {
@@ -759,6 +876,104 @@ const resetCheckoutModalState = () => {
 
 const showAdminAreaPage = () => showPage(adminAreaSection);
 
+async function renderDisabledDaysAdmin() {
+    const listContainer = document.getElementById('disabled-days-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '<p>Lade gesperrte Tage...</p>';
+
+    const disabledDays = new Set();
+    try {
+        const q = query(collection(db, "disabledDays"), where("isDisabled", "==", true));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+            disabledDays.add(doc.id); // doc.id ist 'YYYY-MM-DD'
+        });
+
+        const sortedDays = Array.from(disabledDays).sort();
+
+        if (sortedDays.length === 0) {
+            listContainer.innerHTML = '<p>Aktuell sind keine Tage gesperrt.</p>';
+            return;
+        }
+
+        const ul = document.createElement('ul');
+        sortedDays.forEach(dateStr => {
+            const li = document.createElement('li');
+            const dateObj = new Date(dateStr + 'T00:00:00'); // Zeitzone vermeiden
+            li.textContent = dateObj.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            ul.appendChild(li);
+        });
+        listContainer.innerHTML = '';
+        listContainer.appendChild(ul);
+
+    } catch (error) {
+        console.error("Fehler beim Laden der gesperrten Tage für Admin:", error);
+        listContainer.innerHTML = '<p>Fehler beim Laden der Daten.</p>';
+    }
+}
+
+async function renderProductLeaderboard() {
+    const container = document.getElementById('product-leaderboard-container');
+    if (!container) return;
+    container.innerHTML = '<p>Lade Ranking...</p>';
+
+    const productCounts = {};
+    try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const sevenDaysAgoTimestamp = Timestamp.fromDate(sevenDaysAgo);
+
+        const q = query(collection(db, "orders"), where("timestamp", ">=", sevenDaysAgoTimestamp));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            container.innerHTML = '<p>Keine Bestelldaten in den letzten 7 Tagen gefunden.</p>';
+            return;
+        }
+
+        querySnapshot.forEach(doc => {
+            const order = doc.data();
+            if (order.items) {
+                for (const itemId in order.items) {
+                    const quantity = order.items[itemId].quantity;
+                    productCounts[itemId] = (productCounts[itemId] || 0) + quantity;
+                }
+            }
+        });
+
+        const sortedProducts = Object.entries(productCounts)
+                                   .sort(([, countA], [, countB]) => countB - countA)
+                                   .slice(0, 3);
+
+        if (sortedProducts.length === 0) {
+            container.innerHTML = '<p>Keine Produkte in den letzten 7 Tagen verkauft.</p>';
+            return;
+        }
+
+        container.innerHTML = ''; // Container leeren
+        sortedProducts.forEach(([itemId, count], index) => {
+            const product = products[itemId];
+            if (product) {
+                const rank = index + 1;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `leaderboard-item rank-${rank}`;
+                itemDiv.innerHTML = `
+                    <div class="leaderboard-rank">#${rank}</div>
+                    <div class="leaderboard-details">
+                        <span class="leaderboard-name">${product.name}</span>
+                        <span class="leaderboard-count">${count} Mal verkauft</span>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            }
+        });
+
+    } catch (error) {
+        console.error("Fehler beim Erstellen des Produkt-Rankings:", error);
+        container.innerHTML = '<p>Fehler beim Laden des Rankings.</p>';
+    }
+}
+
 const showAdminToolsPage = () => {
     if (auth.currentUser) {
         showPage(adminToolsSection);
@@ -766,10 +981,55 @@ const showAdminToolsPage = () => {
         renderAdminStats();
         renderAdminMenu();
         renderRestverkaufAdmin();
+        renderProductLeaderboard();
+        renderDisabledDaysAdmin();
     } else {
         openModal();
     }
 };
+
+const disableDateBtn = document.getElementById('disable-date-btn');
+const enableDateBtn = document.getElementById('enable-date-btn');
+const disableDateInput = document.getElementById('disable-date-input');
+
+if (disableDateBtn) {
+    disableDateBtn.addEventListener('click', async () => {
+        const dateValue = disableDateInput.value;
+        if (!dateValue) {
+            showNotification("Bitte wähle ein Datum aus.", "error");
+            return;
+        }
+        try {
+            await setDoc(doc(db, "disabledDays", dateValue), { 
+                isDisabled: true, 
+                reason: "Manuell gesperrt" 
+            });
+            showNotification(`Der ${dateValue} wurde erfolgreich gesperrt.`, "success");
+            renderDisabledDaysAdmin(); // Liste aktualisieren
+            setupDaySelector(); // Kalender für User aktualisieren
+        } catch (error) {
+            showNotification("Fehler beim Sperren des Datums.", "error");
+        }
+    });
+}
+
+if (enableDateBtn) {
+    enableDateBtn.addEventListener('click', async () => {
+        const dateValue = disableDateInput.value;
+        if (!dateValue) {
+            showNotification("Bitte wähle ein Datum zur Freigabe aus.", "error");
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, "disabledDays", dateValue));
+            showNotification(`Der ${dateValue} wurde erfolgreich freigegeben.`, "success");
+            renderDisabledDaysAdmin(); // Liste aktualisieren
+            setupDaySelector(); // Kalender für User aktualisieren
+        } catch (error) {
+            showNotification("Fehler beim Freigeben des Datums.", "error");
+        }
+    });
+}
 
 const showProfilePage = async () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -973,27 +1233,20 @@ const populateMinutes = (isFourteen = false) => {
     const selectedHour = parseInt(customHourSelect.getAttribute('data-value'), 10);
 
     minutes.forEach(m => {
+        const minuteValue = parseInt(m, 10);
+
+        if (selectedHour === 11 && minuteValue < 20) {
+            return; 
+        }
+
+        if (isToday && selectedHour === currentHour && minuteValue <= currentMinute) {
+            return;
+        }
+
         const optionDiv = document.createElement('div');
         optionDiv.classList.add('custom-option');
         optionDiv.dataset.value = m;
         optionDiv.textContent = m;
-
-        const minuteValue = parseInt(m, 10);
-        let isDisabled = false;
-
-
-        if (selectedHour === 11 && minuteValue < 20) {
-            isDisabled = true;
-        }
-
-        if (isToday && selectedHour === currentHour && minuteValue <= currentMinute) {
-            isDisabled = true;
-        }
-        
-       
-        if (isDisabled) {
-            optionDiv.classList.add('disabled');
-        }
         customMinuteOptions.appendChild(optionDiv);
     });
 };
@@ -1024,6 +1277,8 @@ const renderCart = () => {
     const selectDayNotice = document.getElementById('select-day-notice');
     const selectTimeNotice = document.getElementById('select-time-notice');
     const timeLimitNotice = document.getElementById('time-limit-notice');
+    
+    const soldOutNotice = document.getElementById('sold-out-notice');
     profileCompletionNotice.innerHTML = '';
 
     let totalPrice = 0;
@@ -1040,8 +1295,8 @@ const renderCart = () => {
             const itemTotal = item.price * item.quantity;
             totalPrice += itemTotal;
             const li = document.createElement('li');
-li.className = 'cart-item';
-li.innerHTML = `
+            li.className = 'cart-item';
+            li.innerHTML = `
                 <div class="cart-item-details">
                     <span class="cart-item-name">${item.name}</span>
                     <span class="cart-item-price">${itemTotal.toFixed(2).replace('.', ',')} €</span>
@@ -1053,7 +1308,7 @@ li.innerHTML = `
                     <button class="cart-remove-btn" data-id="${id}"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             `;
-cartItemsList.appendChild(li);
+            cartItemsList.appendChild(li);
         });
     }
 
@@ -1066,7 +1321,23 @@ cartItemsList.appendChild(li);
     let dayNoticeVisible = false;
     let timeNoticeVisible = false;
     let timeLimitNoticeVisible = false;
-    let timeLimitMessage = ''; 
+    let timeLimitMessage = '';
+   
+    let soldOutNoticeVisible = false;
+    let soldOutMessage = '';
+
+    const soldOutItemsInCart = [];
+    itemIds.forEach(id => {
+        if (id !== 'isRestverkauf' && currentMenuStatus[id] === true) {
+            soldOutItemsInCart.push(cart[id].name);
+        }
+    });
+
+    if (soldOutItemsInCart.length > 0) {
+        soldOutNoticeVisible = true;
+        isButtonDisabled = true;
+        soldOutMessage = `Folgende Artikel sind ausverkauft: ${soldOutItemsInCart.join(', ')}. Bitte entferne sie aus dem Warenkorb.`;
+    }
 
     const hour = customHourSelect.getAttribute('data-value');
     const minute = customMinuteSelect.getAttribute('data-value');
@@ -1087,13 +1358,13 @@ cartItemsList.appendChild(li);
             const now = new Date();
             const isToday = selectedPickupDay === dayMapping[now.getDay()];
 
-          
+
             if (isToday && parseInt(hour, 10) === 11 && parseInt(minute, 10) < 20) {
                 timeLimitMessage = 'Bestellungen sind heute erst ab 11:20 Uhr möglich.';
                 timeLimitNoticeVisible = true;
                 isButtonDisabled = true;
             } else {
-              
+
                 const pickupDate = new Date();
                 const dayIndex = dayIndexMapping[selectedPickupDay];
                 const currentDayIndex = now.getDay();
@@ -1138,13 +1409,19 @@ cartItemsList.appendChild(li);
     maxOrderValueNotice.style.display = maxOrderNoticeVisible ? 'block' : 'none';
     selectDayNotice.style.display = dayNoticeVisible ? 'block' : 'none';
     selectTimeNotice.style.display = timeNoticeVisible ? 'block' : 'none';
-    
-    
+
+
     if (timeLimitNoticeVisible) {
         timeLimitNotice.textContent = timeLimitMessage;
     }
     timeLimitNotice.style.display = timeLimitNoticeVisible ? 'block' : 'none';
+
     
+    if (soldOutNoticeVisible) {
+        soldOutNotice.textContent = soldOutMessage;
+    }
+    soldOutNotice.style.display = soldOutNoticeVisible ? 'block' : 'none';
+
     checkoutBtn.disabled = isButtonDisabled;
 };
 
@@ -1533,25 +1810,50 @@ const renderArchivedOrders = async () => {
     });
 };
 
+
 async function handleReorder(orderId) {
     const orderRef = doc(db, "orders", orderId);
     try {
+        await fetchMenuStatus(); 
+        
         const orderSnap = await getDoc(orderRef);
         if (!orderSnap.exists()) {
             showNotification("Die ursprüngliche Bestellung konnte nicht gefunden werden.", "error");
             return;
         }
+        
         const orderData = orderSnap.data();
-        cart = orderData.items;
-        showNotification("Die Artikel wurden in deinen Warenkorb gelegt!", "success");
+        
+        cart = {};
+        const addedItems = [];
+        const soldOutItems = [];
+
+        for (const itemId in orderData.items) {
+            if (currentMenuStatus[itemId] === true) {
+                soldOutItems.push(orderData.items[itemId].name);
+            } else {
+                cart[itemId] = orderData.items[itemId];
+                addedItems.push(orderData.items[itemId].name);
+            }
+        }
+        
+        if (addedItems.length > 0) {
+            showNotification("Verfügbare Artikel wurden in deinen Warenkorb gelegt!", "success");
+        }
+        
+        if (soldOutItems.length > 0) {
+            
+            showNotification(`Folgende Artikel sind ausverkauft und konnten nicht hinzugefügt werden: ${soldOutItems.join(', ')}`, "error");
+        }
+
         showOrderPage();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
     } catch (error) {
         console.error("Fehler beim erneuten Bestellen: ", error);
         showNotification("Ein Fehler ist aufgetreten. Die Artikel konnten nicht in den Warenkorb gelegt werden.", "error");
     }
 }
-
 onAuthStateChanged(auth, async (user) => {
     const optionalLinks = [userProfileLink, userOrdersLink, managementOrdersLink, adminToolsLink];
     optionalLinks.forEach(link => link.style.display = 'none');
@@ -1772,7 +2074,7 @@ registerBtn.addEventListener('click', async () => {
             firstName: "", lastName: "", usernameChangesThisMonth: 0,
             usernameLastChangeMonth: "none", firstNameChangeCount: 0,
             lastNameChangeCount: 0, isCoAdmin: false, isAdmin: false,
-            isBlocked: false, isVerified: false, balance: 0, favorites: []
+            isBlocked: false, isVerified: false, balance: 0, favorites: [], lastOrderTimestamp: null
         });
 
         await sendEmailVerification(user);
@@ -1863,7 +2165,7 @@ googleSignInBtn.addEventListener('click', async () => {
                         usernameChangesThisMonth: 0, usernameLastChangeMonth: "none",
                         firstNameChangeCount: 0, lastNameChangeCount: 0,
                         isCoAdmin: false, isAdmin: false, isBlocked: false,
-                        isVerified: false, balance: 0, favorites: []
+                        isVerified: false, balance: 0, favorites: [], lastOrderTimestamp: null
                     });
                     closeModal();
                     showNotification(`Willkommen, ${username}! Dein Konto wurde erstellt.`, 'success');
@@ -2618,33 +2920,11 @@ async function checkStatus() {
     }
 }
 
+
 async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, orderPickupTime, isRestverkauf = false) {
     const user = auth.currentUser;
     if (!user) {
         showNotification("Du musst angemeldet sein, um zu bestellen.", "error");
-        return;
-    }
-
-    const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 3600000);
-    const oneHourAgoTimestamp = Timestamp.fromDate(oneHourAgo);
-    const ordersLastHourQuery = query(
-        collection(db, "orders"),
-        where("userId", "==", user.uid),
-        where("timestamp", ">=", oneHourAgoTimestamp)
-    );
-
-    try {
-        const snapshot = await getDocs(ordersLastHourQuery);
-        if (snapshot.size >= 5) {
-            showNotification("Bestelllimit erreicht. Du kannst maximal 5 Bestellungen pro Stunde aufgeben.", "error");
-            setButtonLoading(submitPaymentBtn, false);
-            setButtonLoading(payWithBalanceBtn, false);
-            return;
-        }
-    } catch (error) {
-        console.error("Fehler bei der Prüfung des Bestelllimits:", error);
-        showNotification("Bestellung konnte nicht geprüft werden. Versuche es erneut.", "error");
         return;
     }
 
@@ -2656,10 +2936,40 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
     if (paymentMethod === 'Guthaben') setButtonLoading(payWithBalanceBtn, true);
     else setLoading(true);
 
+    const userRef = doc(db, "users", user.uid);
+    const newOrderRef = doc(collection(db, "orders"));
+
     try {
-        const orderData = await createOrderObject(paymentMethod, orderCart, orderPickupDay, orderPickupTime);
-        if (isRestverkauf) {
-            await runTransaction(db, async (transaction) => {
+        await runTransaction(db, async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists()) {
+                throw new Error("Benutzerprofil nicht gefunden.");
+            }
+
+            const userData = userDoc.data();
+            const lastOrderTimestamp = userData.lastOrderTimestamp;
+            const now = Timestamp.now();
+
+            
+            const COOLDOWN_SECONDS = 10;
+            if (lastOrderTimestamp && (now.seconds - lastOrderTimestamp.seconds < COOLDOWN_SECONDS)) {
+                throw new Error(`Bitte warte einen Moment. Du kannst nur alle ${COOLDOWN_SECONDS} Sekunden bestellen.`);
+            }
+
+            
+            const oneHourAgo = new Date(now.toMillis() - 3600000);
+            const ordersLastHourQuery = query(
+                collection(db, "orders"),
+                where("userId", "==", user.uid),
+                where("timestamp", ">=", oneHourAgo)
+            );
+            const snapshot = await getDocs(ordersLastHourQuery);
+            if (snapshot.size >= 5) {
+                throw new Error("Bestelllimit erreicht. Du kannst maximal 5 Bestellungen pro Stunde aufgeben.");
+            }
+            
+            
+            if (isRestverkauf) {
                 for (const itemId in orderCart) {
                     const itemRef = doc(db, "restverkaufStock", itemId);
                     const stockDoc = await transaction.get(itemRef);
@@ -2669,13 +2979,17 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
                     const newCount = stockDoc.data().count - orderCart[itemId].quantity;
                     transaction.update(itemRef, { count: newCount });
                 }
-                const newOrderRef = doc(collection(db, "orders"));
-                transaction.set(newOrderRef, orderData);
-            });
-        } else {
-            await addDoc(collection(db, "orders"), orderData);
-        }
+            }
 
+            
+            const orderData = await createOrderObject(paymentMethod, orderCart, orderPickupDay, orderPickupTime);
+
+           
+            transaction.set(newOrderRef, orderData); 
+            transaction.update(userRef, { lastOrderTimestamp: now }); 
+        });
+
+        
         checkoutModal.style.display = 'none';
         if (paymentMethod !== 'Online-Zahlung') {
             showNotification("Bestellung wurde erfolgreich abgeschickt!", "success");
@@ -2683,12 +2997,14 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
             if (isRestverkauf) checkAndDisplayRestverkauf();
             showUserOrdersPage();
         }
+
     } catch (error) {
         console.error("Fehler beim Senden der Bestellung: ", error);
         showNotification(`Ein Fehler ist aufgetreten: ${error.message}`, "error");
     } finally {
-        setButtonLoading(payWithBalanceBtn, false);
-        setLoading(false);
+        
+        if (paymentMethod === 'Guthaben') setButtonLoading(payWithBalanceBtn, false);
+        else setLoading(false);
     }
 }
 
