@@ -1282,8 +1282,19 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     padding: 20px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     border-left: 5px solid var(--brand);
+
+    opacity: 0;
+    transform: translateY(15px);
+   
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out, 
+                background-color 0.3s ease, box-shadow 0.3s ease, 
+                border-left-color 0.3s ease;
 }
 
+.order-card.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
 .order-card.archived {
     border-left: 5px solid #ccc;
     opacity: 0.8;
@@ -1444,6 +1455,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     margin-bottom: 20px;
     font-size: 1.5rem;
 }
+
 .reported-order-item-compact {
     display: flex;
     justify-content: space-between;
@@ -1454,7 +1466,16 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     border-left: 5px solid var(--error);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+
+    opacity: 0;
+    transform: translateY(15px);
+  
+    transition: transform 0.2s ease, box-shadow 0.2s ease, 
+                background-color 0.3s ease, opacity 0.4s ease-out;
+}
+.reported-order-item-compact.is-visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 .reported-order-item-compact:hover {
     transform: translateY(-2px);
@@ -2386,38 +2407,37 @@ html.dark-mode ::-webkit-scrollbar-thumb {
 .theme-option input[type="radio"] {
     display: none;
 }
-/* Der neue gleitende Hintergrund */
+
 .theme-switcher::before {
     content: '';
     position: absolute;
-    z-index: 1; /* Stellt sicher, dass er HINTER dem Text/Icon liegt */
+    z-index: 1; 
     top: 5px;
     bottom: 5px;
     left: 5px;
     
-    /* Berechnet die Breite für 1 von 3 Items, 
-       unter Berücksichtigung von padding (2*5px) und gaps (2*10px) */
+   
     width: calc((100% - 10px - 20px) / 3);
     
-    /* Das Styling des "aktiven" Elements */
+    
     background: var(--card);
     border-radius: var(--border-radius-sm);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    border: 2px solid var(--brand); /* Wir nutzen border statt border-color */
+    border: 2px solid var(--brand);
     
-    /* Die "coole" Animation */
+    
     transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Position für "Dunkel" */
+
 .theme-switcher:has(#theme-dark:checked)::before {
-    /* 1x die Breite + 1x den 'gap' (10px) verschieben */
+    
     transform: translateX(calc(100% + 10px));
 }
 
-/* Position für "System" */
+
 .theme-switcher:has(#theme-system:checked)::before {
-    /* 2x die Breite + 2x den 'gap' (20px) verschieben */
+   
     transform: translateX(calc(200% + 20px));
 }
 .theme-option label {
@@ -2428,17 +2448,15 @@ html.dark-mode ::-webkit-scrollbar-thumb {
     gap: 8px;
     padding: 15px 10px;
     border-radius: var(--border-radius-sm);
-    border: 2px solid transparent; /* Behalten für konsistentes Layout */
+    border: 2px solid transparent; 
     cursor: pointer;
     font-weight: 600;
     font-size: 0.9em;
     color: var(--muted);
     
-    /* Wichtige Änderungen: */
-    position: relative; /* <-- HINZUGEFÜGT */
-    z-index: 2;         /* <-- HINZUGEFÜGT */
-    /* Übergang nur noch für die Textfarbe */
-    transition: color 0.3s ease; /* <-- GEÄNDERT */
+    position: relative;
+    z-index: 2;      
+    transition: color 0.3s ease; 
 }
 
 .theme-option label i {
@@ -2446,10 +2464,9 @@ html.dark-mode ::-webkit-scrollbar-thumb {
 }
 
 .theme-option input[type="radio"]:not(:checked):hover + label {
-    color: var(--ink); /* Text wird dunkler beim Hovern, wenn nicht aktiv */
+    color: var(--ink); 
 }
 
-/* Entfernt den alten Hintergrund-Hover-Effekt */
 .theme-option input[type="radio"]:hover + label {
     background: none;
 }
@@ -2458,9 +2475,9 @@ html.dark-mode .theme-option input[type="radio"]:hover + label {
 }
 .theme-option input[type="radio"]:checked + label {
     color: var(--ink);
-    background: none; /* <-- HINZUGEFÜGT */
-    border-color: transparent; /* <-- HINZUGEFÜGT */
-    box-shadow: none; /* <-- HINZUGEFÜGT */
+    background: none; 
+    border-color: transparent; 
+    box-shadow: none; 
 }
 html.dark-mode .secondary-button,
 html.dark-mode .received-order-btn,
@@ -2607,5 +2624,55 @@ html.dark-mode .custom-option.disabled:hover {
     #admintools-section .user-search-form input,
     #admintools-section .user-search-form button {
         width: 100%;
+    }
+}
+
+.mobile-cart-link {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    background-color: var(--brand);
+    color: #fff;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 998;
+    transform: scale(0);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.mobile-cart-link .cart-bubble {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--error);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transform: scale(0);
+    transition: transform 0.2s ease;
+}
+
+.mobile-cart-link .cart-bubble.has-items {
+    transform: scale(1);
+}
+
+@media screen and (max-width: 850px) {
+    body:has(#order-section[style*="display: grid"]) .mobile-cart-link {
+        display: flex;
+        transform: scale(1);
     }
 }

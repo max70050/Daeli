@@ -243,7 +243,7 @@ const archivedOrdersHeader = document.getElementById('archived-orders-header');
 const verifyAccountBtn = document.getElementById('verify-account-btn');
 const verificationPinInput = document.getElementById('verification-pin');
 const agbCheckbox = document.getElementById('agb-checkbox');
-
+const mobileCartBubble = document.getElementById('mobile-cart-bubble'); 
 const dayMapping = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 const dayIndexMapping = { "Montag": 1, "Dienstag": 2, "Mittwoch": 3, "Donnerstag": 4, "Freitag": 5 };
 
@@ -1423,6 +1423,24 @@ const renderCart = () => {
     soldOutNotice.style.display = soldOutNoticeVisible ? 'block' : 'none';
 
     checkoutBtn.disabled = isButtonDisabled;
+
+    if (mobileCartBubble) {
+    let totalItems = 0;
+    for (const id in cart) {
+        
+        if (id !== 'isRestverkauf' && cart[id] && typeof cart[id].quantity === 'number') { 
+            totalItems += cart[id].quantity;
+        }
+    }
+
+    if (totalItems > 0) {
+        mobileCartBubble.textContent = totalItems;
+        mobileCartBubble.classList.add('has-items');
+    } else {
+        mobileCartBubble.textContent = '0';
+        mobileCartBubble.classList.remove('has-items');
+    }
+}
 };
 
 cartItemsList.addEventListener('click', (e) => {
@@ -1509,7 +1527,7 @@ const renderUserOrders = (day) => {
         }
 
         userOrdersListContainer.innerHTML = "";
-        orders.forEach(order => {
+        orders.forEach((order, index) => {
             const orderId = order.id;
             const orderDate = order.timestamp.toDate();
             const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
@@ -1554,6 +1572,9 @@ const renderUserOrders = (day) => {
                 headerInfo.appendChild(preparedStatusBadge);
             }
             userOrdersListContainer.appendChild(orderCard);
+            setTimeout(() => {
+    orderCard.classList.add('is-visible');
+}, index * 80); 
         });
     }, (error) => {
         console.error("Fehler beim Lauschen auf Bestellungs-Updates:", error);
@@ -1582,7 +1603,7 @@ const renderManagementOrders = async (day) => {
     }
 
     managementOrdersListContainer.innerHTML = "";
-    orders.forEach(order => {
+    orders.forEach((order, index) => {
         const orderId = order.id;
         const orderDate = order.timestamp.toDate();
         const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
@@ -1635,6 +1656,9 @@ const renderManagementOrders = async (day) => {
             headerInfo.appendChild(paymentStatusBadge);
         }
         managementOrdersListContainer.appendChild(orderCard);
+        setTimeout(() => {
+    orderCard.classList.add('is-visible');
+}, index * 80);
     });
 };
 
@@ -1688,7 +1712,7 @@ const renderReportedOrders = async () => {
     }
 
     reportedOrdersListContainer.innerHTML = "";
-    for (const docSnapshot of querySnapshot.docs) {
+    querySnapshot.docs.forEach((docSnapshot, index) => {
         const order = docSnapshot.data();
         const orderId = docSnapshot.id;
         const orderDate = order.timestamp.toDate();
@@ -1705,7 +1729,10 @@ const renderReportedOrders = async () => {
             <div class="reported-order-date"><span>${formattedDate}</span></div>
         `;
         reportedOrdersListContainer.appendChild(compactItem);
-    }
+        setTimeout(() => {
+    compactItem.classList.add('is-visible');
+    }, index * 80);
+    })
 };
 
 const openReportedOrderDetailModal = async (orderId) => {
@@ -1782,7 +1809,7 @@ const renderArchivedOrders = async () => {
     }
 
     archivedOrdersListContainer.innerHTML = "";
-    orders.forEach(order => {
+    orders.forEach((order, index) => {
         const orderDate = order.timestamp.toDate();
         const formattedDate = `${orderDate.toLocaleDateString('de-DE')} um ${orderDate.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr`;
         const itemsHtml = Object.values(order.items).map(item => `<li><span>${item.quantity}x ${item.name}</span></li>`).join('');
@@ -1807,6 +1834,9 @@ const renderArchivedOrders = async () => {
             </div>
         `;
         archivedOrdersListContainer.appendChild(orderCard);
+        setTimeout(() => {
+    orderCard.classList.add('is-visible');
+}, index * 80);
     });
 };
 
