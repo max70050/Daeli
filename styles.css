@@ -2,7 +2,6 @@
 
 html {
   scroll-behavior: smooth;
-  /* Sanfter Farbübergang für Theme-Wechsel */
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -17,16 +16,13 @@ html {
   --error: #e53935;
   --warning: #f59e0b;
   --favorite: #ffc107;
-
-  /* Neue, konsistente Border-Radien */
   --border-radius-sm: 8px;
   --border-radius-md: 12px;
   --border-radius-lg: 20px;
 }
 
-/* --- NEU: Dark Mode Variablen --- */
 html.dark-mode {
-  --brand: #7a7a4f; /* Etwas hellere Marke für besseren Kontrast */
+  --brand: #7a7a4f;
   --ink: #e0e0e0;
   --muted: #8a8a8a;
   --bg: #1a1a1a;
@@ -37,7 +33,6 @@ html.dark-mode {
   --warning: #f7b02f;
   --favorite: #ffc107;
 }
-/* --- ENDE NEU --- */
 
 * {
     box-sizing: border-box;
@@ -63,7 +58,6 @@ body {
   flex-direction: column;
   min-height: 100vh;
   user-select: none;
-  /* Verbesserte Schriftglättung */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -186,9 +180,9 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-weight: 600;
     cursor: pointer;
     border: none;
-    border-radius: var(--border-radius-lg); /* Variable */
+    border-radius: var(--border-radius-lg);
     padding: 10px 20px;
-    transition: background .2s ease, transform .2s ease, box-shadow .2s ease, background-color .2s ease; /* background-color hinzugefügt */
+    transition: background .2s ease, transform .2s ease, box-shadow .2s ease, background-color .2s ease;
     text-align: center;
     text-decoration: none;
     width: 100%;
@@ -254,7 +248,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 0.9em;
     padding: 10px 18px;
     width: auto;
-    transition: background .2s ease, transform .2s ease, box-shadow .2s ease, background-color .2s ease; /* background-color hinzugefügt */
+    transition: background .2s ease, transform .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
 #reset-password-btn {
     font-size: 0.9em;
@@ -272,7 +266,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     width: 100%;
     font-size: 0.9em;
     padding: 10px 18px;
-    transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease; /* box-shadow hinzugefügt */
+    transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease;
 }
 .danger-button:hover:not(:disabled) {
     background-color: #c62828;
@@ -295,7 +289,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     gap: 5px;
     font-size: 0.9em;
     padding: 10px 18px;
-    transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease; /* box-shadow hinzugefügt */
+    transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease;
 }
 .finish-order-btn:hover {
     background-color: #388e3c;
@@ -315,7 +309,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     gap: 5px;
     font-size: 0.9em;
     padding: 10px 18px;
-    transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease; /* box-shadow hinzugefügt */
+    transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease;
 }
 .prepare-order-btn:hover:not(:disabled) {
     background-color: #d97706;
@@ -383,7 +377,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 
 .collapsible-section {
     background: var(--card);
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     transition: background-color 0.3s ease;
 }
@@ -406,7 +400,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     align-items: center;
     gap: 10px;
     color: var(--ink);
-    font-size: 1.5rem; /* Vereinheitlicht */
+    font-size: 1.5rem;
 }
 .collapsible-header h3 .fa-star {
     color: var(--favorite);
@@ -465,7 +459,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font: inherit;
     padding: 12px;
     border: 1px solid var(--line);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     background: #fafafa;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
@@ -494,7 +488,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     gap: 20px;
     padding: 20px;
     background: var(--card);
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     border-left: 5px solid var(--brand);
     transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
@@ -531,7 +525,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 0.75em;
     font-weight: 600;
     padding: 4px 12px;
-    border-radius: var(--border-radius-lg); /* Variable */
+    border-radius: var(--border-radius-lg);
     color: #fff;
     text-transform: uppercase;
 }
@@ -586,7 +580,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .menu-category {
     background: var(--card);
     padding: 25px;
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 .menu-category h2 {
@@ -633,7 +627,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 1.3rem;
     color: #ccc;
     padding: 5px;
-    transition: color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; /* box-shadow hinzugefügt */
+    transition: color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 .favorite-btn:hover {
     transform: scale(1.1);
@@ -654,11 +648,11 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 1.2rem;
     width: 35px;
     height: 35px;
-    border-radius: 50%; /* Beibehalten */
+    border-radius: 50%;
     border: 1px solid var(--line);
     background: #fafafa;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.1s, box-shadow 0.2s ease; /* box-shadow hinzugefügt */
+    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.1s, box-shadow 0.2s ease;
     color: var(--ink);
 }
 
@@ -681,7 +675,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .cart-container {
     grid-area: cart;
     background: var(--card);
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     padding: 25px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     position: sticky;
@@ -758,11 +752,11 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     flex-grow: 1;
     padding: 10px 5px;
     border: 1px solid var(--line);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     background-color: #fafafa;
     cursor: pointer;
     font-weight: 600;
-    transition: all 0.2s ease, box-shadow 0.2s ease; /* box-shadow hinzugefügt */
+    transition: all 0.2s ease, box-shadow 0.2s ease;
     color: var(--ink);
 }
 .day-selector button:hover {
@@ -823,10 +817,10 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-weight: 600;
     color: var(--ink);
     background: #fafafa;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     border: 1px solid var(--line);
     cursor: pointer;
-    transition: all 0.2s ease, box-shadow 0.2s ease; /* box-shadow hinzugefügt */
+    transition: all 0.2s ease, box-shadow 0.2s ease;
 }
 .custom-select-trigger:hover {
     border-color: #ccc;
@@ -874,7 +868,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     min-width: 100%;
     margin-top: 5px;
     border: 1px solid var(--line);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     background: var(--card);
     box-shadow: 0 5px 10px rgba(0,0,0,0.1);
     transition: all 0.3s ease-in-out;
@@ -921,7 +915,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     padding: 10px;
     background-color: #fff5f5;
     border: 1px solid var(--error);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     line-height: 1.4;
     transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
@@ -945,7 +939,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 
 .profile-card {
     background: var(--card);
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     padding: 30px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     margin-bottom: 25px;
@@ -967,7 +961,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     border-bottom: 1px solid var(--line);
     padding-bottom: 15px;
     margin-bottom: 20px;
-    font-size: 1.5rem; /* Vereinheitlicht */
+    font-size: 1.5rem;
 }
 
 .profile-field {
@@ -1013,7 +1007,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--line);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     background: #fafafa;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
@@ -1052,7 +1046,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .modal-content {
     background: var(--card);
     padding: 25px 40px;
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     box-shadow: 0 5px 20px rgba(0,0,0,0.15);
     width: 100%;
     max-width: 400px;
@@ -1078,12 +1072,12 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .modal-content h2 {
     margin-top: 0;
     margin-bottom: 25px;
-    font-size: 1.5rem; /* Vereinheitlicht */
+    font-size: 1.5rem;
 }
 .modal-content input { margin-bottom: 15px; }
 .modal-content button {
     margin-top: 10px;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     padding: 14px;
 }
 .modal-content button:disabled { background-color: #ccc; cursor: not-allowed; }
@@ -1099,7 +1093,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     margin-bottom: 20px;
     padding: 10px;
     background-color: #fff5f5;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     border: 1px solid var(--error);
     transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
@@ -1154,7 +1148,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     margin: 20px 0;
     padding: 15px;
     background: #f9f9f9;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     font-size: 1.1em;
     display: flex;
     flex-direction: column;
@@ -1181,7 +1175,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     left: 50%;
     transform: translateX(-50%);
     padding: 15px 25px;
-    border-radius: var(--border-radius-lg); /* Variable */
+    border-radius: var(--border-radius-lg);
     color: white;
     font-weight: 600;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -1249,7 +1243,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     color: var(--muted);
     cursor: pointer;
     position: relative;
-    transition: color 1.2s ease, box-shadow 0.2s ease; /* box-shadow hinzugefügt */
+    transition: color 1.2s ease, box-shadow 0.2s ease;
     border-bottom: 3px solid transparent;
 }
 
@@ -1284,7 +1278,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 
 .order-card {
     background: var(--card);
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     padding: 20px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     border-left: 5px solid var(--brand);
@@ -1335,7 +1329,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .order-pickup-time {
     background: #f9f9f9;
     padding: 5px 10px;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     transition: background-color 0.3s ease;
 }
 
@@ -1369,7 +1363,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     list-style: none;
     padding: 10px;
     background-color: #f9f9f9;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     max-height: 150px;
     overflow-y: auto;
     transition: background-color 0.3s ease;
@@ -1423,7 +1417,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .stat-card {
     background: var(--card);
     padding: 25px;
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     text-align: center;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
@@ -1448,7 +1442,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 }
 .sub-section h2 {
     margin-bottom: 20px;
-    font-size: 1.5rem; /* Vereinheitlicht */
+    font-size: 1.5rem;
 }
 .reported-order-item-compact {
     display: flex;
@@ -1456,7 +1450,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     align-items: center;
     padding: 15px;
     background: var(--card);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     border-left: 5px solid var(--error);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     cursor: pointer;
@@ -1480,7 +1474,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .reported-user-details {
     background-color: #fff5f5;
     border: 1px solid var(--error);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     padding: 15px;
     margin-top: 15px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -1757,7 +1751,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     background-color: var(--brand);
     color: #fff;
     border: none;
-    border-radius: var(--border-radius-lg); /* Variable */
+    border-radius: var(--border-radius-lg);
     padding: 10px 25px;
     cursor: pointer;
     font-weight: 600;
@@ -1835,7 +1829,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 0.8em;
     font-weight: 600;
     padding: 3px 10px;
-    border-radius: var(--border-radius-lg); /* Variable */
+    border-radius: var(--border-radius-lg);
     margin-top: 8px;
     display: inline-block;
     text-align: center;
@@ -1865,13 +1859,13 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-weight: 600;
     cursor: pointer;
     border: 1px solid var(--line);
-    border-radius: var(--border-radius-lg); /* Variable */
+    border-radius: var(--border-radius-lg);
     padding: 5px 12px;
     font-size: 0.85em;
     background: #6a6a43;
     color: var(--ink);
     margin-left: 10px;
-    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; /* box-shadow hinzugefügt */
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     vertical-align: middle;
     text-align: center;
     margin-top: 12px;
@@ -1887,7 +1881,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     align-items: center;
     background-color: #f9f9f9;
     padding: 15px 20px;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     margin-bottom: 20px;
     border: 1px solid var(--line);
     transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -1955,7 +1949,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     align-items: center;
     padding: 15px;
     background: var(--card);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     border-left: 4px solid var(--brand);
     transition: background-color 0.3s ease;
@@ -2012,13 +2006,13 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%); /* Begradigt */
+    transform: translate(-50%, -50%);
     background-color: var(--error);
     color: white;
-    padding: 5px 12px; /* Angepasst */
-    border-radius: var(--border-radius-sm); /* Variable */
+    padding: 5px 12px;
+    border-radius: var(--border-radius-sm);
     font-weight: 700;
-    font-size: 0.9em; /* Angepasst */
+    font-size: 0.9em;
     z-index: 5;
     pointer-events: none;
 }
@@ -2030,7 +2024,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 .pdf-menu-link-container {
     background: #f9f9f9;
     border: 1px solid var(--line);
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     padding: 20px;
     text-align: center;
     transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -2051,7 +2045,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 #restverkauf-section {
     background: linear-gradient(45deg, #6a6a43, #5a5a3a);
     color: white;
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     padding: 25px;
     margin-bottom: 20px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
@@ -2075,7 +2069,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 
 .restverkauf-item {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     padding: 15px;
     display: flex;
     flex-direction: column;
@@ -2110,11 +2104,11 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     padding: 10px;
     font-weight: 600;
     border: none;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     background-color: #fff;
     color: var(--brand);
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s ease; /* box-shadow hinzugefügt */
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s ease;
 }
 .add-restverkauf-item-btn:hover:not(:disabled) {
     background-color: #f0f0f0;
@@ -2136,7 +2130,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     gap: 15px;
     background: var(--card);
     padding: 15px;
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     transition: background-color 0.3s ease;
 }
@@ -2149,7 +2143,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     padding: 8px;
     text-align: center;
     border: 1px solid var(--line);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 .admin-restverkauf-item button {
@@ -2209,11 +2203,11 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     font-size: 1rem;
     width: 28px;
     height: 28px;
-    border-radius: 50%; /* Beibehalten */
+    border-radius: 50%;
     border: 1px solid var(--line);
     background: #fafafa;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, box-shadow 0.2s ease, background-color 0.2s ease; /* box-shadow hinzugefügt */
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s ease, background-color 0.2s ease;
     color: var(--ink);
     display: flex;
     align-items: center;
@@ -2231,7 +2225,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     color: var(--muted);
     font-size: 1.1em;
     padding: 5px;
-    transition: color 0.2s, transform 0.2s, box-shadow 0.2s ease; /* box-shadow hinzugefügt */
+    transition: color 0.2s, transform 0.2s, box-shadow 0.2s ease;
 }
 
 .cart-remove-btn:hover {
@@ -2264,7 +2258,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     gap: 15px;
     background: var(--card);
     padding: 15px 20px;
-    border-radius: var(--border-radius-md); /* Variable */
+    border-radius: var(--border-radius-md);
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     border-left: 5px solid var(--brand);
     transition: background-color 0.3s ease;
@@ -2301,7 +2295,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
 #disabled-days-list {
     margin-top: 15px;
     background: var(--card);
-    border-radius: var(--border-radius-sm); /* Variable */
+    border-radius: var(--border-radius-sm);
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     transition: background-color 0.3s ease;
@@ -2322,9 +2316,6 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     border-bottom: none;
 }
 
-/* --- NEUE VERBESSERUNGEN --- */
-
-/* 1. Dezente Scrollbar für Webkit-Browser */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -2346,7 +2337,6 @@ html.dark-mode ::-webkit-scrollbar-thumb {
   background: var(--muted);
 }
 
-/* 2. Einheitlicher Fokus-Stil für Barrierefreiheit & cleanen Look */
 .cta-button:focus-visible,
 .nav-button:focus-visible,
 .secondary-button:focus-visible,
@@ -2365,14 +2355,12 @@ html.dark-mode ::-webkit-scrollbar-thumb {
   box-shadow: 0 0 0 4px rgba(106, 106, 67, 0.3);
 }
 
-/* Fokus-Stil für Custom Select (hatte schon einen, aber zur Sicherheit) */
 .custom-select-trigger:focus-visible {
     outline: none;
     border-color: var(--brand);
     box-shadow: 0 0 0 3px rgba(106, 106, 67, 0.2);
 }
 
-/* --- NEU: Stile für Theme Switcher (am Ende der Datei) --- */
 .theme-switcher-description {
     font-size: 0.9em;
     color: var(--muted);
@@ -2388,6 +2376,7 @@ html.dark-mode ::-webkit-scrollbar-thumb {
     padding: 5px;
     border: 1px solid var(--line);
     transition: background-color 0.3s ease, border-color 0.3s ease;
+    position: relative;
 }
 
 .theme-option {
@@ -2397,7 +2386,40 @@ html.dark-mode ::-webkit-scrollbar-thumb {
 .theme-option input[type="radio"] {
     display: none;
 }
+/* Der neue gleitende Hintergrund */
+.theme-switcher::before {
+    content: '';
+    position: absolute;
+    z-index: 1; /* Stellt sicher, dass er HINTER dem Text/Icon liegt */
+    top: 5px;
+    bottom: 5px;
+    left: 5px;
+    
+    /* Berechnet die Breite für 1 von 3 Items, 
+       unter Berücksichtigung von padding (2*5px) und gaps (2*10px) */
+    width: calc((100% - 10px - 20px) / 3);
+    
+    /* Das Styling des "aktiven" Elements */
+    background: var(--card);
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 2px solid var(--brand); /* Wir nutzen border statt border-color */
+    
+    /* Die "coole" Animation */
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 
+/* Position für "Dunkel" */
+.theme-switcher:has(#theme-dark:checked)::before {
+    /* 1x die Breite + 1x den 'gap' (10px) verschieben */
+    transform: translateX(calc(100% + 10px));
+}
+
+/* Position für "System" */
+.theme-switcher:has(#theme-system:checked)::before {
+    /* 2x die Breite + 2x den 'gap' (20px) verschieben */
+    transform: translateX(calc(200% + 20px));
+}
 .theme-option label {
     display: flex;
     flex-direction: column;
@@ -2406,34 +2428,40 @@ html.dark-mode ::-webkit-scrollbar-thumb {
     gap: 8px;
     padding: 15px 10px;
     border-radius: var(--border-radius-sm);
-    border: 2px solid transparent;
+    border: 2px solid transparent; /* Behalten für konsistentes Layout */
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
     font-weight: 600;
     font-size: 0.9em;
     color: var(--muted);
+    
+    /* Wichtige Änderungen: */
+    position: relative; /* <-- HINZUGEFÜGT */
+    z-index: 2;         /* <-- HINZUGEFÜGT */
+    /* Übergang nur noch für die Textfarbe */
+    transition: color 0.3s ease; /* <-- GEÄNDERT */
 }
 
 .theme-option label i {
     font-size: 1.2rem;
 }
 
+.theme-option input[type="radio"]:not(:checked):hover + label {
+    color: var(--ink); /* Text wird dunkler beim Hovern, wenn nicht aktiv */
+}
+
+/* Entfernt den alten Hintergrund-Hover-Effekt */
 .theme-option input[type="radio"]:hover + label {
-    background: var(--bg);
+    background: none;
 }
 html.dark-mode .theme-option input[type="radio"]:hover + label {
-    background: #333; /* Etwas dunkler als card-bg */
+    background: none;
 }
-
 .theme-option input[type="radio"]:checked + label {
-    background: var(--card);
-    border-color: var(--brand);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     color: var(--ink);
+    background: none; /* <-- HINZUGEFÜGT */
+    border-color: transparent; /* <-- HINZUGEFÜGT */
+    box-shadow: none; /* <-- HINZUGEFÜGT */
 }
-
-/* --- NEU: Dark Mode Overrides (am Ende der Datei) --- */
-
 html.dark-mode .secondary-button,
 html.dark-mode .received-order-btn,
 html.dark-mode #discard-profile-btn {
@@ -2522,12 +2550,12 @@ html.dark-mode .order-items-list,
 html.dark-mode .balance-display,
 html.dark-mode .pdf-menu-link-container,
 html.dark-mode .checkout-summary-display {
-    background-color: #222; /* Dunkler als Card-BG */
+    background-color: #222;
     border: 1px solid var(--line);
 }
 
 html.dark-mode .google-signin-btn {
-    background-color: #f0f0f0; /* Google-Button bleibt besser hell */
+    background-color: #f0f0f0;
     color: #333;
     border: 1px solid #ccc;
 }
@@ -2570,17 +2598,14 @@ html.dark-mode .custom-option.disabled:hover {
     color: #555;
 }
 
-/* --- NEU: Korrektur für Admintools auf kleinen Bildschirmen --- */
-
 @media screen and (max-width: 500px) {
-    /* Zielt auf die Formulare in den Admintools (Bestellsuche, Datum verwalten) */
     #admintools-section .user-search-form {
-        flex-direction: column; /* Stapelt die Elemente vertikal */
-        align-items: stretch;   /* Dehnt die Elemente auf die volle Breite */
+        flex-direction: column;
+        align-items: stretch;
     }
 
     #admintools-section .user-search-form input,
     #admintools-section .user-search-form button {
-        width: 100%; /* Stellt sicher, dass sie die verfügbare Breite nutzen */
+        width: 100%;
     }
 }
