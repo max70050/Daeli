@@ -74,7 +74,7 @@ a, button, .quantity-btn, .custom-select-trigger, .day-selector button {
     position: sticky;
     top: 0;
     z-index: 1000;
-    transition: top 0.3s ease-in-out;
+    
 }
 
 .navbar.nav-hidden {

@@ -257,16 +257,31 @@ const getAuthUserAfterRedirect = () => new Promise((resolve, reject) => {
 const navbar = document.querySelector('.navbar');
 let lastScrollTop = 0;
 
+const navHeight = navbar.offsetHeight; 
+let currentTop = 0; 
+
 window.addEventListener('scroll', () => {
     let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    if (scrollTop > 100) {
-        if (scrollTop > lastScrollTop) {
-            navbar.classList.add('nav-hidden');
-        } else {
-            navbar.classList.remove('nav-hidden');
-        }
+
+    if (scrollTop <= 0) {
+        navbar.style.top = '0px';
+        lastScrollTop = 0;
+        currentTop = 0; 
+        return;
     }
-    lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+
+    let delta = scrollTop - lastScrollTop;
+
+    let newTop = currentTop - delta;
+
+    newTop = Math.min(newTop, 0);
+   
+    newTop = Math.max(newTop, -navHeight);
+
+    navbar.style.top = newTop + 'px';
+
+    currentTop = newTop;
+    lastScrollTop = scrollTop;
 }, false);
 
 const validateGoogleRegistration = () => {
