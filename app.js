@@ -254,34 +254,64 @@ const getAuthUserAfterRedirect = () => new Promise((resolve, reject) => {
     }, reject);
 });
 
+// --- OPTIMIERTER CODE (für flüssige Animation) ---
 const navbar = document.querySelector('.navbar');
 let lastScrollTop = 0;
-
 const navHeight = navbar.offsetHeight; 
-let currentTop = 0; 
+let currentTop = 0;
+let ticking = false; // Flag, um sicherzustellen, dass die Funktion nur 1x pro Frame läuft
 
-window.addEventListener('scroll', () => {
+/**
+ * Berechnet die Position der Navbar neu und wendet sie an.
+ * Wird von requestAnimationFrame aufgerufen.
+ */
+function updateNavbarPosition() {
     let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
+    // Wenn wir ganz oben sind, Leiste immer einblenden
     if (scrollTop <= 0) {
         navbar.style.top = '0px';
         lastScrollTop = 0;
-        currentTop = 0; 
+        currentTop = 0;
+        ticking = false; // Flag zurücksetzen
         return;
     }
 
-    let delta = scrollTop - lastScrollTop;
+    // Nur aktualisieren, wenn sich die Scroll-Position wirklich geändert hat
+    // (verhindert unnötige Berechnungen)
+    if (scrollTop !== lastScrollTop) {
+        // Differenz zum letzten Scrollen berechnen
+        let delta = scrollTop - lastScrollTop;
 
-    let newTop = currentTop - delta;
+        // Neue Position berechnen (Aktuelle Position - Scroll-Differenz)
+        let newTop = currentTop - delta;
 
-    newTop = Math.min(newTop, 0);
-   
-    newTop = Math.max(newTop, -navHeight);
+        // Begrenzen (clamp):
+        // 1. Darf nicht positiver als 0 werden (beim Hochschieben)
+        newTop = Math.min(newTop, 0);
+        // 2. Darf nicht negativer als -navHeight werden (beim Runterschieben)
+        newTop = Math.max(newTop, -navHeight);
 
-    navbar.style.top = newTop + 'px';
+        // Neue Position anwenden
+        navbar.style.top = newTop + 'px';
 
-    currentTop = newTop;
-    lastScrollTop = scrollTop;
+        // Positionen für den nächsten Durchlauf speichern
+        currentTop = newTop;
+        lastScrollTop = scrollTop;
+    }
+
+    ticking = false; // Flag zurücksetzen, damit der nächste Frame angefordert werden kann
+}
+
+// Der eigentliche Scroll-Listener
+window.addEventListener('scroll', () => {
+    // Wenn nicht schon ein Frame angefordert wurde...
+    if (!ticking) {
+        // ...fordere den nächsten Animations-Frame an und...
+        window.requestAnimationFrame(updateNavbarPosition);
+        // ...setze das Flag, damit wir nicht 60 Anfragen pro Sekunde stellen.
+        ticking = true;
+    }
 }, false);
 
 const validateGoogleRegistration = () => {
