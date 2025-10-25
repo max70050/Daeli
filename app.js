@@ -254,62 +254,44 @@ const getAuthUserAfterRedirect = () => new Promise((resolve, reject) => {
     }, reject);
 });
 
-// --- OPTIMIERTER CODE (für flüssige Animation) ---
 const navbar = document.querySelector('.navbar');
 let lastScrollTop = 0;
 const navHeight = navbar.offsetHeight; 
 let currentTop = 0;
-let ticking = false; // Flag, um sicherzustellen, dass die Funktion nur 1x pro Frame läuft
+let ticking = false; 
 
-/**
- * Berechnet die Position der Navbar neu und wendet sie an.
- * Wird von requestAnimationFrame aufgerufen.
- */
 function updateNavbarPosition() {
     let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-    // Wenn wir ganz oben sind, Leiste immer einblenden
     if (scrollTop <= 0) {
         navbar.style.top = '0px';
         lastScrollTop = 0;
         currentTop = 0;
-        ticking = false; // Flag zurücksetzen
+        ticking = false; 
         return;
     }
 
-    // Nur aktualisieren, wenn sich die Scroll-Position wirklich geändert hat
-    // (verhindert unnötige Berechnungen)
     if (scrollTop !== lastScrollTop) {
-        // Differenz zum letzten Scrollen berechnen
         let delta = scrollTop - lastScrollTop;
 
-        // Neue Position berechnen (Aktuelle Position - Scroll-Differenz)
         let newTop = currentTop - delta;
 
-        // Begrenzen (clamp):
-        // 1. Darf nicht positiver als 0 werden (beim Hochschieben)
         newTop = Math.min(newTop, 0);
-        // 2. Darf nicht negativer als -navHeight werden (beim Runterschieben)
         newTop = Math.max(newTop, -navHeight);
 
-        // Neue Position anwenden
         navbar.style.top = newTop + 'px';
 
-        // Positionen für den nächsten Durchlauf speichern
         currentTop = newTop;
         lastScrollTop = scrollTop;
     }
 
-    ticking = false; // Flag zurücksetzen, damit der nächste Frame angefordert werden kann
+    ticking = false; 
 }
 
-// Der eigentliche Scroll-Listener
 window.addEventListener('scroll', () => {
-    // Wenn nicht schon ein Frame angefordert wurde...
     if (!ticking) {
-        // ...fordere den nächsten Animations-Frame an und...
         window.requestAnimationFrame(updateNavbarPosition);
-        // ...setze das Flag, damit wir nicht 60 Anfragen pro Sekunde stellen.
+       
         ticking = true;
     }
 }, false);
@@ -344,11 +326,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const themeRadios = document.querySelectorAll('.theme-switcher input[name="theme"]');
     
-    // Initialen Status der Radio-Buttons beim Laden der Seite setzen
     const storedTheme = localStorage.getItem('theme') || 'system';
     applyThemeAndCheckRadios(storedTheme);
 
-    // Listener für Radio-Button-Klicks
     themeRadios.forEach(radio => {
         radio.addEventListener('change', () => {
             if (radio.checked) {
@@ -357,10 +337,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // Listener für System-Änderungen (z.B. Sonnenuntergang)
     systemThemeMedia.addEventListener('change', (e) => {
         const currentThemeSetting = localStorage.getItem('theme') || 'system';
-        // Nur anwenden, wenn der Nutzer "System" ausgewählt hat
+        
         if (currentThemeSetting === 'system') {
             document.documentElement.classList.toggle('dark-mode', e.matches);
         }
