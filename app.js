@@ -1203,7 +1203,12 @@ async function checkForTopUpSuccess() {
                 throw new Error("Session-Benutzer stimmt nicht mit angemeldetem Benutzer überein.");
             }
 
-            const amountAdded = sessionData.amount_total / 100;
+            if (!sessionData.credit_amount_cents) {
+                 throw new Error("Gutschriftbetrag nicht in der Session gefunden.");
+            }
+            const amountAdded = sessionData.credit_amount_cents / 100;
+            
+
             const userRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userRef);
             const currentBalance = userDoc.data().balance || 0;
@@ -1305,16 +1310,25 @@ const renderCart = () => {
     const soldOutNotice = document.getElementById('sold-out-notice');
     profileCompletionNotice.innerHTML = '';
 
+    // --- NEU ---
+    const cartFeeRow = document.getElementById('cart-fee-row');
+    const totalPriceContainer = document.getElementById('total-price-container');
+    const TRANSACTION_FEE = 0.25;
+    let cartHasItems = false;
+    // --- ENDE NEU ---
+
     let totalPrice = 0;
     const itemIds = Object.keys(cart);
 
     if (itemIds.length === 0 || (itemIds.length === 1 && itemIds[0] === 'isRestverkauf')) {
         cartItemsList.appendChild(cartPlaceholder);
         cartPlaceholder.style.display = 'block';
+        cartHasItems = false; // NEU
     } else {
         cartPlaceholder.style.display = 'none';
         itemIds.forEach(id => {
             if (id === 'isRestverkauf') return;
+            cartHasItems = true; // NEU
             const item = cart[id];
             const itemTotal = item.price * item.quantity;
             totalPrice += itemTotal;
@@ -1335,6 +1349,23 @@ const renderCart = () => {
             cartItemsList.appendChild(li);
         });
     }
+
+    
+    if (cartHasItems && !cart.isRestverkauf) { 
+        cartFeeRow.style.display = 'flex';
+        totalPrice += TRANSACTION_FEE;
+        
+        totalPriceContainer.style.borderTop = 'none';
+        totalPriceContainer.style.paddingTop = '0';
+        totalPriceContainer.style.marginTop = '0';
+    } else {
+        cartFeeRow.style.display = 'none';
+     
+        totalPriceContainer.style.borderTop = '2px solid var(--line)';
+        totalPriceContainer.style.paddingTop = '20px';
+        totalPriceContainer.style.marginTop = '15px';
+    }
+   
 
     totalPriceValue.textContent = `${totalPrice.toFixed(2).replace('.', ',')} €`;
     checkoutTotalPrice.textContent = `${totalPrice.toFixed(2).replace('.', ',')} €`;
@@ -1367,6 +1398,14 @@ const renderCart = () => {
     const minute = customMinuteSelect.getAttribute('data-value');
 
     if (totalPrice === 0) isButtonDisabled = true;
+    
+    if (totalPrice === TRANSACTION_FEE && cartHasItems) {
+    
+    } else if (totalPrice === 0) {
+         isButtonDisabled = true;
+    }
+    
+
 
     if (!cart.isRestverkauf) {
         if (!selectedPickupDay) {
@@ -2584,9 +2623,18 @@ checkoutBtn.addEventListener('click', () => {
     const minute = customMinuteSelect.getAttribute('data-value');
     checkoutPickupDay.textContent = selectedPickupDay || '--';
     checkoutPickupTime.textContent = hour && minute ? `${hour}:${minute}` : '--:--';
-    const totalPrice = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+    let subtotal = 0;
+    let hasItems = false;
+    Object.keys(cart).forEach(id => {
+        if (id !== 'isRestverkauf' && cart[id]) {
+            subtotal += cart[id].price * cart[id].quantity;
+            hasItems = true;
+        }
+    });
+   const TRANSACTION_FEE = 0.25;
+    const totalPrice = (hasItems && !cart.isRestverkauf) ? subtotal + TRANSACTION_FEE : subtotal;
     const currentBalance = currentUserProfile?.balance || 0;
-
+    document.getElementById('checkout-fee-row').style.display = (hasItems && !cart.isRestverkauf) ? 'flex' : 'none';
     if (currentBalance >= totalPrice) {
         payWithBalanceBtn.disabled = false;
         payWithBalanceBtn.querySelector('.btn-text').innerHTML = `Mit Guthaben bezahlen <br> <small>(${currentBalance.toFixed(2).replace('.', ',')} €)</small>`;

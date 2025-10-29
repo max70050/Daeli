@@ -260,6 +260,10 @@
                 <li id="cart-placeholder">Dein Warenkorb ist leer.</li>
             </ul>
             <div class="cart-summary">
+                <div id="cart-fee-row" class="total-price" style="font-size: 1em; font-weight: normal; display: none; border-top: 1px solid var(--line); padding-top: 15px; margin-top: 15px;">
+                        <span>Transaktionsgebühr:</span>
+                        <span id="cart-fee-value">0,25 €</span>
+                    </div>
                 <div class="total-price">
                     <span>Gesamt:</span>
                     <span id="total-price-value">0,00 €</span>
@@ -416,7 +420,7 @@
                 <div class="profile-field topup-field">
                     <label for="topup-amount">Betrag aufladen (€)</label>
                     <input type="number" id="topup-amount" placeholder="z.B. 10" min="5" max="100">
-                    <small>Mindestens 5,00 €. Das maximale Guthaben beträgt 100,00 €.</small>
+                    <small>Mindestens 5,00 €. Das maximale Guthaben beträgt 100,00 €.<br><strong>Zzgl. 0,25 € Transaktionsgebühr pro Aufladung.</strong></small>
                     <div id="topup-error-message" class="error-message" style="display: none; color: var(--error); font-size: 13px; margin-top: 5px;"></div>
                 </div>
                 <button id="topup-balance-btn" class="cta-button">
@@ -733,6 +737,10 @@
                     <div class="checkout-summary-item">
                         <span>Abholzeit:</span>
                         <strong><span id="checkout-pickup-time">--:--</span> Uhr</strong>
+                    </div>
+                    <div class="checkout-summary-item" id="checkout-fee-row" style="font-size: 0.9em; font-weight: normal; display: none;">
+                        <span>Transaktionsgebühr:</span>
+                        <strong>0,25 €</strong>
                     </div>
                     <div class="checkout-summary-item">
                         <span>Gesamtpreis:</span>
