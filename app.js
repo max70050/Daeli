@@ -752,7 +752,7 @@ const handleGoogleAuth = async () => {
             googleUsernameSubmitBtn.onclick = async () => {
                 const username = googleUsernameInput.value.trim();
                 if (username.length < 5 || !googleAgbCheckbox.checked) {
-                    showNotification("Bitte gib einen gültigen Benutzernamen an und akzeptiere die AGB.", "error");
+                    showNotification("Bitte gib einen gültigen Benutzernamen der aus min. 5 und max. 15 zeichen besteht an und akzeptiere die AGB.", "error");
                     return;
                 }
                 setButtonLoading(googleUsernameSubmitBtn, true);
@@ -1235,10 +1235,7 @@ async function checkForTopUpSuccess() {
 }
 
 const openModal = () => {
-    loginView.style.display = 'block';
-    registerView.style.display = 'none';
-    verificationMessage.style.display = 'none';
-    passwordResetView.style.display = 'none';
+  switchModalView(loginView);
     passwordResetInitialView.style.display = 'block';
     passwordResetSentView.style.display = 'none';
     authModal.style.display = 'flex';
