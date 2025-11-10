@@ -114,7 +114,7 @@ let currentUserProfile = null;
 let selectedPickupDay = null;
 let searchDebounceTimer;
 
-const stripe = Stripe("pk_test_51SEri0AmYRR9jDsfQRpujMicuceGW065Ayzz1yFe34uA0pOlFuxjyInkwZvFdCYBOdEHgOscKInwfb3xDYrDSGo100jgxcjLYi");
+const stripe = Stripe("pk_live_51SErhjAXqCMxsN0IKSaIF1kTX8e1xgUBesj73JKrYh8w4L2vjXmOQTuQ91wQvWYRwX8olnDyOBcGBn6BMM5CJw7u003yNpLvpe");
 const backendUrl = 'https://daeli-backend.onrender.com';
 let elements;
 
@@ -3387,4 +3387,5 @@ verifyAccountBtn.addEventListener('click', async () => {
     } finally {
         setButtonLoading(verifyAccountBtn, false);
     }
+
 });
