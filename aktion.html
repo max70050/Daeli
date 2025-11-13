@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kontoaktion - Dæli-Gruenwald</title>
-    <!-- Wir verwenden deine bestehende styles.css -->
     <link rel="stylesheet" href="styles.css">
-    <!-- FontAwesome für die Icons (wie in index.html) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* Zusätzliche Stile, um die Seite wie das Modal zu zentrieren */
         html {
             height: 100%;
         }
@@ -19,11 +16,10 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: var(--bg); /* Verwendet Hintergrund aus styles.css */
+            background: var(--bg); 
             padding: 20px;
         }
 
-        /* Wir "simulieren" das modal-content-Styling aus deiner styles.css */
         .action-container {
             background: var(--card);
             padding: 25px 40px;
@@ -32,22 +28,18 @@
             width: 100%;
             max-width: 420px;
             text-align: center;
-            /* Übergänge für das Ein-/Ausblenden */
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        /* Versteckte Sektionen */
         .action-section {
             display: none;
         }
         
-        /* Aktive Sektion */
         .action-section.active {
             display: block;
             animation: fadeIn 0.5s ease-in-out;
         }
 
-        /* Styling für Erfolgs-Icons */
         .styled-message-box i {
             font-size: 3rem;
             color: var(--success);
@@ -69,7 +61,6 @@
             margin-bottom: 25px;
         }
         
-        /* Lade-Spinner (wie im Login-Button) */
         .loader {
             width: 40px;
             height: 40px;
@@ -84,7 +75,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Stile für das Passwort-Reset-Formular (aus styles.css übernommen) */
         .action-container h2 {
             margin-top: 0;
             margin-bottom: 25px;
@@ -119,7 +109,7 @@
             right: 15px; 
             cursor: pointer; 
             color: #999; 
-            z-index: 2; /* Über Input */
+            z-index: 2; 
         }
 
         #password-strength-feedback { 
@@ -134,7 +124,6 @@
         #password-strength-feedback li.valid { color: var(--success); }
         #password-strength-feedback li.valid::before { content: '✓ '; }
         
-        /* Fehlermeldung */
         #reset-error-message {
             display: none;
             color: var(--error);
@@ -148,14 +137,12 @@
 
     <div class="action-container">
 
-        <!-- 1. Lade-Ansicht (Standard) -->
         <div id="loading-view" class="action-section active">
             <h2>Bitte warten...</h2>
             <div class="loader"></div>
             <p id="loading-text" style="color: var(--muted); font-size: 0.9em;">Aktion wird verarbeitet.</p>
         </div>
 
-        <!-- 2. Passwort-Reset-Ansicht -->
         <div id="reset-view" class="action-section">
             <h2>Neues Passwort festlegen</h2>
             <p style="color: var(--muted); font-size: 0.9em; margin-top: -15px; margin-bottom: 20px;">Bitte gib ein neues, sicheres Passwort ein.</p>
@@ -165,7 +152,6 @@
                 <i class="fa-solid fa-eye-slash" id="toggle-reset-password"></i>
             </div>
             
-            <!-- Passwort-Stärke-Feedback (wie in index.html) -->
             <div id="password-strength-feedback">
                 <p>Das Passwort muss enthalten:</p>
                 <ul>
@@ -183,7 +169,6 @@
             </button>
         </div>
 
-        <!-- 3. Nachrichten-Ansicht (Für Erfolg/Fehler) -->
         <div id="message-view" class="action-section">
             <div class="styled-message-box" id="message-box-content">
                 <i class="fa-solid fa-check-circle"></i>
@@ -198,16 +183,14 @@
     </div>
 
     <script type="module">
-        // Importiere die notwendigen Firebase Module
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { 
             getAuth, 
             applyActionCode, 
             confirmPasswordReset,
-            verifyPasswordResetCode // Gut zur Prüfung, bevor das Formular angezeigt wird
+            verifyPasswordResetCode 
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // Deine Firebase Konfiguration (dieselbe wie in app.js)
         const firebaseConfig = {
             apiKey: "AIzaSyCNXQuFW6SLR_w5x1NxlLScp17LjppAuCA",
             authDomain: "schulmensa-9de80.firebaseapp.com",
@@ -218,11 +201,9 @@
             measurementId: "G-5TXS661SFP"
         };
 
-        // Firebase initialisieren
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // --- DOM-Elemente ---
         const loadingView = document.getElementById('loading-view');
         const resetView = document.getElementById('reset-view');
         const messageView = document.getElementById('message-view');
@@ -237,19 +218,16 @@
         const resetSubmitBtn = document.getElementById('reset-submit-btn');
         const resetErrorMsg = document.getElementById('reset-error-message');
 
-        // Passwort-Stärke-Prüfer
         const lengthCheck = document.getElementById('length-check');
         const uppercaseCheck = document.getElementById('uppercase-check');
         const numberCheck = document.getElementById('number-check');
 
-        // Hilfsfunktion zum Anzeigen einer Sektion
         function showSection(sectionToShow) {
             [loadingView, resetView, messageView].forEach(section => {
                 section.classList.toggle('active', section === sectionToShow);
             });
         }
 
-        // Hilfsfunktion für Nachrichten
         function showMessage(title, text, isError = false) {
             messageTitle.textContent = title;
             messageText.textContent = text;
@@ -258,7 +236,6 @@
             const icon = messageBox.querySelector('i');
             icon.className = isError ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-check-circle';
 
-            // Zeige Login-Button nur bei Fehlern oder explizitem Erfolg
             if (isError || title === "Passwort geändert!") {
                 loginRedirectBtn.style.display = 'inline-block';
             } else {
@@ -267,8 +244,6 @@
 
             showSection(messageView);
         }
-
-        // --- Passwort-Validierung (aus app.js) ---
         function validatePassword() {
             const pass = passwordInput.value;
             const hasLength = pass.length >= 8;
@@ -286,7 +261,6 @@
         
         passwordInput.addEventListener('input', validatePassword);
         
-        // Passwort-Sichtbarkeit umschalten
         togglePasswordBtn.addEventListener('click', (e) => {
              if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
@@ -299,7 +273,6 @@
             }
         });
         
-        // Hilfsfunktion für Lade-Button
         const setButtonLoading = (button, isLoading) => {
             if (!button) return;
             const btnText = button.querySelector('.btn-text');
@@ -309,12 +282,10 @@
             if (btnSpinner) btnSpinner.style.display = isLoading ? 'inline-block' : 'none';
         };
 
-        // Zur Login-Seite
         loginRedirectBtn.addEventListener('click', () => {
-            window.location.href = 'index.html'; // Leitet zur Hauptseite
+            window.location.href = 'index.html'; 
         });
 
-        // --- Hauptlogik ---
         window.onload = async function() {
             const params = new URLSearchParams(window.location.search);
             const mode = params.get('mode');
@@ -326,16 +297,14 @@
             }
 
             switch (mode) {
-                // Fall 1: E-Mail-Verifizierung
                 case 'verifyEmail':
                     try {
                         await applyActionCode(auth, oobCode);
                         showMessage('Erfolgreich verifiziert!', 'Dein Konto ist jetzt aktiv. Du wirst in 2 Sekunden weitergeleitet.');
                         
-                        // Kurze Verzögerung (Ihr Wunsch)
                         setTimeout(() => {
-                            window.location.href = "index.html"; // Leitet zur Startseite
-                        }, 2000); // 2 Sekunden
+                            window.location.href = "index.html"; 
+                        }, 2000); 
 
                     } catch (error) {
                         console.error("Fehler bei verifyEmail:", error);
@@ -343,16 +312,11 @@
                     }
                     break;
 
-                // Fall 2: Passwort zurücksetzen
                 case 'resetPassword':
                     try {
-                        // Zuerst prüfen, ob der Code überhaupt gültig ist
                         await verifyPasswordResetCode(auth, oobCode);
                         
-                        // Code ist gültig, zeige das Reset-Formular
                         showSection(resetView);
-
-                        // Event-Listener für das Absenden des neuen Passworts
                         resetSubmitBtn.addEventListener('click', async () => {
                             if (!validatePassword()) {
                                 resetErrorMsg.textContent = 'Bitte gib ein gültiges Passwort ein.';
@@ -367,7 +331,6 @@
                                 const newPassword = passwordInput.value;
                                 await confirmPasswordReset(auth, oobCode, newPassword);
                                 
-                                // Erfolg!
                                 showMessage('Passwort geändert!', 'Dein Passwort wurde erfolgreich zurückgesetzt. Du kannst dich jetzt damit anmelden.');
                             
                             } catch (error) {
@@ -384,7 +347,6 @@
                     }
                     break;
 
-                // Andere Fälle (z.B. E-Mail-Änderung)
                 default:
                     showMessage('Unbekannte Aktion', 'Der Link scheint für eine nicht unterstützte Aktion zu sein.', true);
             }
