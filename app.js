@@ -2439,7 +2439,8 @@ confirmDeleteBtn.addEventListener('click', async () => {
 
     try {
         await reauthenticateWithCredential(user, credential);
-        try {
+        /*
+       try {
             const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
             const querySnapshot = await getDocs(ordersQuery);
             const deletePromises = [];
@@ -2450,6 +2451,7 @@ confirmDeleteBtn.addEventListener('click', async () => {
             showNotification("Die Bestellungen konnten nicht gelöscht werden. Das Konto wird nicht gelöscht.", "error");
             return;
         }
+        */
 
         try {
             await deleteDoc(userDocRef);
