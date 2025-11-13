@@ -2417,7 +2417,7 @@ html.dark-mode ::-webkit-scrollbar-thumb {
     left: 5px;
     
    
-    width: calc((100% - 10px - 20px) / 3);
+    width: calc((100% - 44px) / 3);;
     
     
     background: var(--card);
