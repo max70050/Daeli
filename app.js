@@ -1638,7 +1638,7 @@ const renderUserOrders = (day) => {
         });
     }, (error) => {
         console.error("Fehler beim Lauschen auf Bestellungs-Updates:", error);
-        userOrdersListContainer.innerHTML = `<p>Fehler beim Laden der Bestellungen.</p>`;
+        userOrdersListContainer.innerHTML = `<p>Fehler beim Laden der Bestellungen oder noch nicht bestellt.</p>`;
     });
 };
 
@@ -3119,6 +3119,18 @@ function setLoading(isLoading) {
     document.getElementById('spinner').style.display = isLoading ? 'inline' : 'none';
     document.getElementById('button-text').style.display = isLoading ? 'none' : 'inline';
 }
+
+window.addEventListener('pageshow', (event) => {
+    const topupBtn = document.getElementById('topup-balance-btn');
+    if (topupBtn) {
+        setButtonLoading(topupBtn, false);
+    }
+
+    const submitPaymentBtn = document.getElementById('submit-payment-btn');
+    if (submitPaymentBtn) {
+        setLoading(false);
+    }
+});
 
 favoritesHeader.addEventListener('click', () => { favoritesSection.classList.toggle('open'); });
 archivedOrdersHeader.addEventListener('click', () => { archivedOrdersSection.classList.toggle('open'); });
