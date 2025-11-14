@@ -63,7 +63,8 @@ import {
     getDocs,
     Timestamp,
     runTransaction,
-    writeBatch
+    writeBatch,
+    increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const ACCOUNT_VERIFICATION_ENABLED = true;
@@ -1716,38 +1717,21 @@ const renderManagementOrders = async (day) => {
     });
 };
 
-
 const renderAdminStats = async () => {
     try {
         const statsDocRef = doc(db, "stats", "userCount");
         const statsDocSnap = await getDoc(statsDocRef);
 
         if (statsDocSnap.exists()) {
-            statsUserCount.textContent = statsDocSnap.data().total;
+            const statsData = statsDocSnap.data();
+            statsUserCount.textContent = statsData.total || 0;
+            statsOpenOrdersCount.textContent = statsData.totalOpenOrders || 0;
+            statsTodayOrdersCount.textContent = statsData.ordersToday || 0;
         } else {
             statsUserCount.textContent = "N/A"; 
+            statsOpenOrdersCount.textContent = "N/A";
+            statsTodayOrdersCount.textContent = "N/A";
         }
-        const openOrdersQuery = query(
-            collection(db, "orders"),
-            where("adminCompleted", "==", false),
-            where("isReported", "==", false)
-        );
-        const openOrdersSnapshot = await getDocs(openOrdersQuery);
-        statsOpenOrdersCount.textContent = openOrdersSnapshot.size;
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const todayOrdersQuery = query(
-            collection(db, "orders"),
-            where("timestamp", ">=", today),
-            where("timestamp", "<", tomorrow)
-        );
-        const todayOrdersSnapshot = await getDocs(todayOrdersQuery);
-        statsTodayOrdersCount.textContent = todayOrdersSnapshot.size;
-
     } catch (error) {
         console.error("Fehler beim Laden der Admin-Statistiken:", error);
         statsUserCount.textContent = "Fehler";
@@ -1755,7 +1739,6 @@ const renderAdminStats = async () => {
         statsTodayOrdersCount.textContent = "Fehler";
     }
 };
-
 const renderReportedOrders = async () => {
     reportedOrdersListContainer.innerHTML = "<p>Lade gemeldete Bestellungen...</p>";
 
@@ -2667,10 +2650,17 @@ managementOrdersListContainer.addEventListener('click', async (e) => {
     if (target.matches('.finish-order-btn')) {
         try {
             target.disabled = true;
-            await updateDoc(orderRef, { adminCompleted: true });
+            const statsRef = doc(db, "stats", "userCount"); 
+            await runTransaction(db, async (transaction) => {
+                transaction.update(orderRef, { adminCompleted: true });
+                transaction.update(statsRef, {
+                    totalOpenOrders: increment(-1) 
+                });
+            });
+
             orderCard.style.transition = 'opacity 0.3s ease';
             orderCard.style.opacity = '0';
-            setTimeout(() => { orderCard.remove(); renderAdminStats(); }, 300);
+            setTimeout(() => { orderCard.remove(); renderAdminStats(); }, 300); 
             showNotification("Bestellung als fertig markiert.", "success");
         } catch (error) {
             console.error("Fehler bei Admin-Aktion 'Fertig': ", error);
@@ -3086,6 +3076,12 @@ async function saveOrderToFirestore(paymentMethod, orderCart, orderPickupDay, or
            
             transaction.set(newOrderRef, orderData); 
             transaction.update(userRef, { lastOrderTimestamp: now }); 
+            const statsRef = doc(db, "stats", "userCount");
+              transaction.update(statsRef, {
+              totalOpenOrders: increment(1),
+               ordersToday: increment(1)
+          });
+
         });
 
         
