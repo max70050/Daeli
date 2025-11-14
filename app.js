@@ -1,13 +1,11 @@
-// --- NEU: Dark Mode Logik (ganz oben in app.js einfügen) ---
+
 
 const systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
 
 /**
- * Wendet das Theme auf das <html>-Element an und aktualisiert die Radio-Buttons.
- * @param {string} theme - 'light', 'dark', or 'system'
+ * @param {string} theme 
  */
 const applyThemeAndCheckRadios = (theme) => {
-    // 1. Theme anwenden
     if (theme === 'system') {
         document.documentElement.classList.toggle('dark-mode', systemThemeMedia.matches);
     } else if (theme === 'dark') {
@@ -16,7 +14,6 @@ const applyThemeAndCheckRadios = (theme) => {
         document.documentElement.classList.remove('dark-mode');
     }
 
-    // 2. Radio-Buttons aktualisieren (falls sie geladen sind)
     const radio = document.querySelector(`.theme-switcher input[name="theme"][value="${theme}"]`);
     if (radio) {
         radio.checked = true;
@@ -24,19 +21,16 @@ const applyThemeAndCheckRadios = (theme) => {
 };
 
 /**
- * Speichert die Auswahl und wendet das Theme an.
- * @param {string} theme - 'light', 'dark', or 'system'
+ * @param {string} theme 
  */
 const saveAndApplyTheme = (theme) => {
     localStorage.setItem('theme', theme);
     applyThemeAndCheckRadios(theme);
 };
 
-// --- Sofortige Theme-Anwendung (Flash of Unstyled Content verhindern) ---
 const initialTheme = localStorage.getItem('theme') || 'system';
 applyThemeAndCheckRadios(initialTheme);
 
-// --- ENDE NEUER CODE (OBEN EINFÜGEN) ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getAuth,
@@ -910,7 +904,7 @@ async function renderDisabledDaysAdmin() {
         const q = query(collection(db, "disabledDays"), where("isDisabled", "==", true));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
-            disabledDays.add(doc.id); // doc.id ist 'YYYY-MM-DD'
+            disabledDays.add(doc.id); 
         });
 
         const sortedDays = Array.from(disabledDays).sort();
@@ -923,7 +917,7 @@ async function renderDisabledDaysAdmin() {
         const ul = document.createElement('ul');
         sortedDays.forEach(dateStr => {
             const li = document.createElement('li');
-            const dateObj = new Date(dateStr + 'T00:00:00'); // Zeitzone vermeiden
+            const dateObj = new Date(dateStr + 'T00:00:00'); 
             li.textContent = dateObj.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             ul.appendChild(li);
         });
@@ -1638,7 +1632,7 @@ const renderUserOrders = (day) => {
         });
     }, (error) => {
         console.error("Fehler beim Lauschen auf Bestellungs-Updates:", error);
-        userOrdersListContainer.innerHTML = `<p>Fehler beim Laden der Bestellungen oder noch nicht bestellt.</p>`;
+        userOrdersListContainer.innerHTML = `<p>Fehler beim Laden der Bestellungen oder es wurde noch nichts bestellt.</p>`;
     });
 };
 
