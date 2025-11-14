@@ -1302,12 +1302,12 @@ const renderCart = () => {
     const soldOutNotice = document.getElementById('sold-out-notice');
     profileCompletionNotice.innerHTML = '';
 
-    // --- NEU ---
+   
     const cartFeeRow = document.getElementById('cart-fee-row');
     const totalPriceContainer = document.getElementById('total-price-container');
     const TRANSACTION_FEE = 0.25;
     let cartHasItems = false;
-    // --- ENDE NEU ---
+
 
     let totalPrice = 0;
     const itemIds = Object.keys(cart);
@@ -1315,12 +1315,12 @@ const renderCart = () => {
     if (itemIds.length === 0 || (itemIds.length === 1 && itemIds[0] === 'isRestverkauf')) {
         cartItemsList.appendChild(cartPlaceholder);
         cartPlaceholder.style.display = 'block';
-        cartHasItems = false; // NEU
+        cartHasItems = false; 
     } else {
         cartPlaceholder.style.display = 'none';
         itemIds.forEach(id => {
             if (id === 'isRestverkauf') return;
-            cartHasItems = true; // NEU
+            cartHasItems = true; 
             const item = cart[id];
             const itemTotal = item.price * item.quantity;
             totalPrice += itemTotal;
