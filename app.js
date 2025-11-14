@@ -1716,12 +1716,17 @@ const renderManagementOrders = async (day) => {
     });
 };
 
+
 const renderAdminStats = async () => {
     try {
-        const usersQuery = query(collection(db, "users"));
-        const usersSnapshot = await getDocs(usersQuery);
-        statsUserCount.textContent = usersSnapshot.size;
+        const statsDocRef = doc(db, "stats", "userCount");
+        const statsDocSnap = await getDoc(statsDocRef);
 
+        if (statsDocSnap.exists()) {
+            statsUserCount.textContent = statsDocSnap.data().total;
+        } else {
+            statsUserCount.textContent = "N/A"; 
+        }
         const openOrdersQuery = query(
             collection(db, "orders"),
             where("adminCompleted", "==", false),
@@ -1742,6 +1747,7 @@ const renderAdminStats = async () => {
         );
         const todayOrdersSnapshot = await getDocs(todayOrdersQuery);
         statsTodayOrdersCount.textContent = todayOrdersSnapshot.size;
+
     } catch (error) {
         console.error("Fehler beim Laden der Admin-Statistiken:", error);
         statsUserCount.textContent = "Fehler";
@@ -2150,16 +2156,21 @@ registerBtn.addEventListener('click', async () => {
     setButtonLoading(registerBtn, true);
 
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        await updateProfile(user, { displayName: username });
-        await setDoc(doc(db, "users", user.uid), {
-            username: username, email: email, createdAt: new Date(),
-            firstName: "", lastName: "", usernameChangesThisMonth: 0,
-            usernameLastChangeMonth: "none", firstNameChangeCount: 0,
-            lastNameChangeCount: 0, isCoAdmin: false, isAdmin: false,
-            isBlocked: false, isVerified: false, balance: 0, favorites: [], lastOrderTimestamp: null
-        });
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+const user = userCredential.user;
+
+await updateProfile(user, { displayName: username });
+
+const idToken = await user.getIdToken();
+
+await fetch(`${backendUrl}/api/create-user-profile`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+    },
+    body: JSON.stringify({ username, email })
+});
 
         await sendEmailVerification(user);
         document.getElementById('verification-email-display').textContent = email;
@@ -2433,29 +2444,22 @@ confirmDeleteBtn.addEventListener('click', async () => {
 
     try {
         await reauthenticateWithCredential(user, credential);
-        /*
-       try {
-            const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
-            const querySnapshot = await getDocs(ordersQuery);
-            const deletePromises = [];
-            querySnapshot.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
-            await Promise.all(deletePromises);
-        } catch (orderError) {
-            console.error("Fehler beim Löschen der Bestellungen:", orderError);
-            showNotification("Die Bestellungen konnten nicht gelöscht werden. Das Konto wird nicht gelöscht.", "error");
-            return;
-        }
-        */
+     
 
-        try {
-            await deleteDoc(userDocRef);
-        } catch (dbError) {
-            console.error("Fehler beim Löschen des Firestore-Dokuments:", dbError);
-            showNotification("Konto konnte nicht vollständig gelöscht werden (DB-Fehler). Bitte kontaktiere den Support.", "error");
-            return;
-        }
+      await reauthenticateWithCredential(user, credential);
 
-        await deleteUser(user);
+const idToken = await user.getIdToken();
+
+const response = await fetch(`${backendUrl}/api/delete-account`, {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${idToken}`
+    }
+});
+
+if (!response.ok) {
+    throw new Error('Server-Fehler beim Löschen des Kontos.');
+}
         reauthDeleteModal.style.display = 'none';
         showNotification("Dein Konto und alle zugehörigen Bestellungen wurden endgültig gelöscht.", "success");
     } catch (authError) {
