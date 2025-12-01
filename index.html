@@ -272,7 +272,19 @@
     <main id="profile-section" style="display: none;">
         <div class="profile-container">
             <h1>Profileinstellungen</h1>
-
+ <div class="profile-card" id="verification-card">
+                <h2>Konto verifizieren</h2> <br>
+<p>Passende Codes bekommst du bei Victor aus der 9A </p>
+                <div class="profile-field">
+                    <label for="verification-pin">Verifizierungs-PIN</label>
+                    <input type="text" id="verification-pin" placeholder="8-stelligen PIN eingeben" maxlength="8">
+                    <small>Um die Plattform nutzen zu können, musst du dein Konto mit dem von der Schule bereitgestellten PIN verifizieren. Dies stellt sicher, dass nur Schüler ab der 8. Klasse bestellen können.</small>
+                </div>
+                <button id="verify-account-btn" class="cta-button">
+                    <span class="btn-text">Verifizieren</span>
+                    <span class="btn-spinner"></span>
+                </button>
+            </div>
             <div class="profile-card">
                 <h2>Kontoinformationen</h2>
                 <div class="profile-field">
@@ -291,19 +303,7 @@
             <div class="profile-card" id="verification-status-display" style="display: none;">
             </div>
 
-            <div class="profile-card" id="verification-card">
-                <h2>Konto verifizieren</h2> <br>
-<p>Passende Codes bekommst du beim Schülercafé</p>
-                <div class="profile-field">
-                    <label for="verification-pin">Verifizierungs-PIN</label>
-                    <input type="text" id="verification-pin" placeholder="8-stelligen PIN eingeben" maxlength="8">
-                    <small>Um die Plattform nutzen zu können, musst du dein Konto mit dem von der Schule bereitgestellten PIN verifizieren. Dies stellt sicher, dass nur Schüler ab der 8. Klasse bestellen können.</small>
-                </div>
-                <button id="verify-account-btn" class="cta-button">
-                    <span class="btn-text">Verifizieren</span>
-                    <span class="btn-spinner"></span>
-                </button>
-            </div>
+           
 
             <div class="profile-card">
                 <h2>Benutzerprofil</h2>
@@ -786,4 +786,5 @@
 
 
 </html>
+
 
