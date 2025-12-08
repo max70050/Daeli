@@ -110,7 +110,7 @@ let selectedPickupDay = null;
 let searchDebounceTimer;
 
 const stripe = Stripe("pk_live_51SErhjAXqCMxsN0IKSaIF1kTX8e1xgUBesj73JKrYh8w4L2vjXmOQTuQ91wQvWYRwX8olnDyOBcGBn6BMM5CJw7u003yNpLvpe");
-const backendUrl = 'https://daeli-backend.onrender.com';
+const backendUrl = 'https://daeli.max-700506.workers.dev/';
 let elements;
 
 const restverkaufSection = document.getElementById('restverkauf-section');
@@ -3394,3 +3394,4 @@ verifyAccountBtn.addEventListener('click', async () => {
     }
 
 });
+
